@@ -46,14 +46,18 @@ def setup():
                 print("\tAdding config for feed.")
                 db['feeds'].insert_one(feed)
 
-def addEntry(session,feedId=None,entry=None):
-    docs_collection = session.client[MDB_DB].docs
-    logs_collection = session.client[MDB_DB].logs
-    resp = docs_collection.insert_one(entry,session=session)
-    logs_collection.update_one({'feedId':feedId},{"$push":{"crawled":entry.id,"inserted":bson.ObjectId(resp.inserted_id)}},session=session)
+def addEntry(session,logId=None,entry=None):
+    try:
+        docs_collection = session.client[MDB_DB].docs
+        logs_collection = session.client[MDB_DB].logs
+        resp = docs_collection.insert_one(entry,session=session)
+        logs_collection.update_one({'_id':logId},{"$push":{"crawled":entry.id,"inserted":bson.ObjectId(resp.inserted_id)}},session=session)
     
-    print("Entry update transaction successful")
-    return
+        print("Entry update transaction successful")
+        return
+    except Exception as e:
+        raise e
+
 
 def getWebContent(entry,selector,dir):
     try:
@@ -86,18 +90,16 @@ def getWebContent(entry,selector,dir):
     except Exception as e:
         raise e
 
-def processEntry(entry,config,dir):
+def processEntry(entry,logId,config,dir):
     try:
         entry.update({'content':getWebContent(entry,config['content_html_selector'],dir)})
         entry.update({'published':datetime.strptime(entry.published, config['date_format'])})
         entry.update({'media_thumbnail':entry.media_thumbnail[0]['url']})
         entry.update({'lang':config['lang']})
         with client.start_session() as session:
-            def callback_wrapper(s):
-                addEntry(s,feedId=config['_id'],entry=entry)
-            session.with_transaction(callback_wrapper)
+            session.with_transaction(lambda session,logId,entry: addEntry(session,logId=logId,entry=entry))
     except Exception as e:
-        db['logs'].update_one({'feedId':config['_id']},{'$push':{'errors':{'entryId':entry.id,'error':e}}})
+        db['logs'].update_one({'_id':logId},{'$push':{'errors':{'entryId':entry.id,'error':e}}})
 
 def crawl():
     installed = list(db["feeds"].find())
@@ -106,24 +108,25 @@ def crawl():
         mkdir(dir)
         feed = feedparser.parse(config['url'])
         db['feeds'].update_one({'_id':config['_id']},{"$set":{'lastCrawl':datetime.now()}})
-        db['logs'].insert_one({'feedId':config['_id'],'start':datetime.now(),'crawled':[],'inserted':[],'errors':[]})
+        r = db['logs'].insert_one({'feedId':config['_id'],'start':datetime.now(),'crawled':[],'inserted':[],'errors':[]})
+        logId = bson.ObjectId(r.inserted_id)
         if 'lastCrawl' in config:
             lastCrawl = config["lastCrawl"]
             for entry in feed.entries:
                 entry_date = datetime.strptime(entry.published, config['date_format'])
                 if entry_date > lastCrawl:
-                    processEntry(entry,config,dir)
+                    processEntry(entry,logId,config,dir)
         else:
             for entry in feed.entries:
-                processEntry(entry,config,dir)
+                processEntry(entry,logId,config,dir)
 
-        db['logs'].update_one({'feedId':config['_id']},{"$set":{'end':datetime.now()}})
+        db['logs'].update_one({'_id':logId},{"$set":{'end':datetime.now()}})
         rmtree(dir)
 
 client, db = connect(MDB_CONN)
 setup()
 crawl()
-
+client.close()
 
 
 
