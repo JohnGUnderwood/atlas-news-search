@@ -12,7 +12,7 @@ from selenium import webdriver
 
 load_dotenv()
 
-MDB_CONN=getenv("MDB_CONN")
+MDB_URI=getenv("MDB_URI")
 MDB_DB=getenv("MDB_DB")
 
 def connect(url):
@@ -91,13 +91,19 @@ def getWebContent(entry,selector,dir):
 
 def processEntry(entry,logId,config,dir):
     try:
-        entry.update({'content':getWebContent(entry,config['content_html_selector'],dir)})
+        entry.update({'content':{config['lang']:getWebContent(entry,config['content_html_selector'],dir)}})
+        entry.update({'summary':{config['lang']:entry.summary}})
+        entry.update({'title':{config['lang']:entry.title}})
         entry.update({'published':datetime.strptime(entry.published, config['date_format'])})
         entry.update({'media_thumbnail':entry.media_thumbnail[0]['url']})
+        entry.update({'tags':[tag['term'] for tag in entry.tags]})
+        entry.update({'authors':[author['name'] for author in entry.authors]})
         entry.update({'lang':config['lang']})
+        entry.update({'attribution':config['attribution']})
         with client.start_session() as session:
             session.with_transaction(lambda session: addEntry(session,logId=logId,entry=entry))
     except Exception as e:
+        print(e)
         db['logs'].update_one({'_id':logId},{'$push':{'errors':{'entryId':entry.id,'error':e}}})
 
 def crawl(config):
@@ -109,10 +115,11 @@ def crawl(config):
     logId = bson.ObjectId(r.inserted_id)
     if 'lastCrawl' in config:
         lastCrawl = config["lastCrawl"]
-        for entry in feed.entries:
-            entry_date = datetime.strptime(entry.published, config['date_format'])
-            if entry_date > lastCrawl:
-                processEntry(entry,logId,config,dir)
+        if lastCrawl < datetime.strptime(feed.feed.updated,config['date_format']):
+            for entry in feed.entries:
+                entry_date = datetime.strptime(entry.published, config['date_format'])
+                if entry_date > lastCrawl:
+                    processEntry(entry,logId,config,dir)
     else:
         for entry in feed.entries:
             processEntry(entry,logId,config,dir)
@@ -120,7 +127,7 @@ def crawl(config):
     db['logs'].update_one({'_id':logId},{"$set":{'status':'stopped','end':datetime.now()}})
     rmtree(dir)
 
-client, db = connect(MDB_CONN)
+client, db = connect(MDB_URI)
 setup()
 installed = list(db["feeds"].find())
 for config in installed:
