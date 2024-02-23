@@ -58,11 +58,6 @@ export default function Home(){
     .catch(error => console.log(error));
   }
 
-  const changeItemsPerPage = (event) => {
-    setPageSize(event.target.value);
-  }
-  
-
   return (
     <>
     <Header/>
@@ -94,8 +89,7 @@ export default function Home(){
             ))}
             <Pagination currentPage={page}
               itemsPerPage={4}
-              itemsPerPageOptions={[4,10,25]}
-              onItemsPerPageOptionChange={changeItemsPerPage}
+              itemsPerPageOptions={[4]}
               numTotalItems={response.hits}
               onBackArrowClick={prevPage}
               onForwardArrowClick={nextPage}
