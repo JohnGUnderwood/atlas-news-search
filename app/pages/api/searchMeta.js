@@ -15,21 +15,6 @@ const router = createRouter();
 
 router.use(database);
 
-// router.post(async (req, res) => {
-//     if(!req.body.pipeline){
-//         console.log(`Request missing 'pipeline' data`)
-//         res.status(400).send(`Request missing 'pipeline' data`);
-//     }else{
-//         const pipeline = req.body.pipeline
-//         try{
-//             const response = await getResults(req.collection,pipeline);
-//             res.status(200).json({results:response,query:pipeline});
-//         }catch(error){
-//             res.status(405).json({'error':`${error}`,query:pipeline});
-//         }
-//     }
-// });
-
 router.post(async (req, res) => {
     if(!req.query.q){
         console.log(`Request missing 'q' param`)
@@ -63,12 +48,6 @@ router.post(async (req, res) => {
                 ]
             }
         }
-      
-        if(req.query.page == 'next' && req.query.pageToken){
-          searchOpts.searchAfter = req.query.pageToken
-        }else if(req.query.page == 'prev' && req.query.pageToken){
-          searchOpts.searchBefore = req.query.pageToken
-        }
 
         if(req.body.filters && Object.keys(req.body.filters).length > 0){
             for (const [field, filter] of Object.entries(req.body.filters)){
@@ -84,28 +63,8 @@ router.post(async (req, res) => {
                 }
             }
         }
-        const pipeline = [
-            {
-                $search:searchOpts
-            },
-            {
-                $limit: req.query.pageSize ? req.query.pageSize : 4
-            },
-            {
-                $project:{
-                  title:`$${schema.titleField}`,
-                  image:`$${schema.imageField}`,
-                  description:`$${schema.descriptionField}`,
-                  highlights: { $meta: "searchHighlights" },
-                  score:{$meta:"searchScore"},
-                  paginationToken: {$meta: 'searchSequenceToken'},
-                  lang:1,
-                  attribution:1
-                }
-            }
-        ]
 
-        const metaPipeline = [
+        const pipeline = [
             {
                 $searchMeta: {
                     index:"searchIndex",
@@ -138,12 +97,9 @@ router.post(async (req, res) => {
             }
         ]
         try{
-            const response = await getResults(req.collection,pipeline);
-            if(req.query.page == 'prev' && req.query.pageToken){
-                res.status(200).json({results:response.reverse(),query:pipeline});
-            }else{
-                res.status(200).json({results:response,query:pipeline});
-            }
+            const meta = await getResults(req.collection,pipeline);
+            const hits = meta[0].count.total;
+            res.status(200).json({facets:meta[0].facet,query:pipeline,hits:hits});
         }catch(error){
             res.status(405).json({'error':`${error}`,query:pipeline});
         }
