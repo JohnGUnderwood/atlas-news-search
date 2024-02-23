@@ -1,5 +1,8 @@
 import { Subtitle, Description, Label } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
+import Icon from '@leafygreen-ui/icon';
+import { useState, } from 'react';
+import styles from './result.module.css';
 
 function getHighlightsHTML(highlightsField,fieldName){
     const highlightedStrings = highlightsField
@@ -35,11 +38,16 @@ function createHighlighting(highlightsField,fieldName,fieldValue) {
 
 
 function SearchResult({r,schema}){
+    const [showHighlights, setShowHighlights] = useState(false);
+
+    const toggleHighlights = () => {
+        setShowHighlights(!showHighlights);
+    }
 
     return (
-        <Card>
-            <div style={{display:"grid",gridTemplateColumns:"160px 75%",gap:"5px",alignItems:"start"}}>
-                <img src={r.image} style={{maxHeight:"75px"}}/>
+        <Card style={{margin:"10px"}}>
+            <div style={{display:"grid",gridTemplateColumns:"230px 70%",gap:"5px",alignItems:"start"}}>
+                <img src={r.image} style={{maxHeight:"120px"}}/>
                 <div>
                 <Subtitle style={{paddingBottom:"5px"}}>
                     {r.title[r.lang]}
@@ -54,14 +62,23 @@ function SearchResult({r,schema}){
                 </Description>
                 </div>
             </div>
-            <div>
-                <Label>Content hits - {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length}</Label>
-                <Description>
-                    {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).map((h,i) => (
-                        <p key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h}}/>...</p>
-                    ))}
-                </Description>
-            </div>
+            {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length > 0
+                ?
+                <div style={{paddingTop:"25px"}}>
+                    <span><Label>Content highlights - {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length}</Label><Icon className={styles.higlightsToggle} onClick={toggleHighlights} glyph={showHighlights? "ChevronDown": "ChevronUp"} fill="None" /></span>
+                    {showHighlights?
+                        <Description>
+                            {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).map((h,i) => (
+                                <p key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h}}/>...</p>
+                            ))}
+                        </Description>
+                        :
+                        <></>
+                    }
+                </div>
+                :
+                <></>
+            }
         </Card>
     )
 }

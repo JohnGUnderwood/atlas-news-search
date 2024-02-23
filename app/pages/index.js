@@ -7,25 +7,19 @@ import { H1,H2, H3, Subtitle, Description, Label } from '@leafygreen-ui/typograp
 import Card from '@leafygreen-ui/card';
 import Button from '@leafygreen-ui/button';
 import { MongoDBLogoMark } from "@leafygreen-ui/logo";
-
-// schema variables
-const schema = {
-  descriptionField : "summary",
-  contentField : "content",
-  titleField : "title",
-  imageField : "media_thumbnail",
-  vectorField : "plot_embedding",
-  facetField : "tags",
-}
+import Pagination from '@leafygreen-ui/pagination';
+import schema from '../config.mjs'
 
 export default function Home(){
   const [query, setQuery] = useState(null);
-  const [instantResults, setInstantResults] = useState(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(4);
+  const [response, setResponse] = useState({results:null,query:null,hits:0,facets:null});
 
   const handleSearch = () => {
     if(query && query != ""){
-      getInstantResults(query)
-      .then(resp => setInstantResults(resp.data.results))
+      getInstantResults({query:query,pageSize:pageSize})
+      .then(resp => setResponse(resp.data))
       .catch(error => console.log(error));
     }else{
       setQuery(null);
@@ -35,7 +29,7 @@ export default function Home(){
   const handleVectorSearch = () => {
     if(query && query != ""){
       vectorSearch(query)
-      .then(resp => setInstantResults(resp.data.results))
+      .then(resp => setResponse(resp.data))
       .catch(error => console.log(error));
     }else{
       setQuery(null);
@@ -43,12 +37,31 @@ export default function Home(){
   }
 
   const handleQueryChange = (event) => {
-    setInstantResults(null);
+    setResponse({results:null,query:event.target.value,hits:0,facets:null});
     setQuery(event.target.value);
-    getInstantResults(event.target.value)
-    .then(resp => setInstantResults(resp.data.results))
+    getInstantResults({query:event.target.value,pageSize:pageSize})
+    .then(resp => setResponse(resp.data))
     .catch(error => console.log(error));
   };
+
+  const nextPage = () => {
+    setPage(page+1);
+    getInstantResults({query:query,after:response.results[response.results.length-1].paginationToken,pageSize:pageSize})
+    .then(resp => setResponse(resp.data))
+    .catch(error => console.log(error));
+  }
+
+  const prevPage = () => {
+    setPage(page-1);
+    getInstantResults({query:query,before:response.results[0].paginationToken,pageSize:pageSize})
+    .then(resp => setResponse(resp.data))
+    .catch(error => console.log(error));
+  }
+
+  const changeItemsPerPage = (event) => {
+    setPageSize(event.target.value);
+  }
+  
 
   return (
     <>
@@ -60,31 +73,38 @@ export default function Home(){
     </div>
     <div style={{display:"grid",gridTemplateColumns:"10% 80% 10%",gap:"0px",alignItems:"start"}}>
       <div style={{paddingTop:"225px"}}>
-      {instantResults && instantResults[0] && instantResults[0].facets && instantResults[0].facets.facet
+      {/* {response?.facets && response.facets.facet
         ? 
         <Card>
           <Subtitle key={`${schema.facetField}`}>{schema.facetField}</Subtitle>
-              {instantResults[0].facets.facet[`${schema.facetField}`].buckets.map(bucket => (
+              {response.facets.facet[`${schema.facetField}`].buckets.map(bucket => (
                   <Description key={bucket._id} style={{paddingLeft:"15px"}}><span key={`${bucket._id}_label`} style={{cursor:"pointer",paddingRight:"5px", color:"blue"}}>{bucket._id}</span><span key={`${bucket._id}_count`}>({bucket.count})</span></Description>
               ))}
         </Card>
         : <></>
-      }
+      } */}
       </div>
       <div>
         {
-          instantResults && instantResults.length > 0
+          response.hits > 0
           ?
           <div style={{maxWidth:"95%"}}>
-            {instantResults.map(r => (
+            {response.results.map(r => (
               <SearchResult r={r} schema={schema}></SearchResult>
             ))}
+            <Pagination currentPage={page}
+              itemsPerPage={4}
+              itemsPerPageOptions={[4,10,25]}
+              onItemsPerPageOptionChange={changeItemsPerPage}
+              numTotalItems={response.hits}
+              onBackArrowClick={prevPage}
+              onForwardArrowClick={nextPage}
+            />
           </div>
           :
           <></>
         }
       </div>
-      <div></div>
     </div>
     </>
   )
@@ -128,108 +148,12 @@ async function vectorSearch(query) {
   });
 }
 
-async function getInstantResults(query) {
-  const pipeline = [
-      // {
-      //   $match:{ $expr : { $eq: [ '$_id' , { $toObjectId: query } ] } }
-      // },
-      // {
-      //   $match: { [`${titleField}`] : query }
-      // },
-      {
-        $search:{
-          index:"searchIndex",
-          text:{
-                query:query,
-                path: [
-                  { "wildcard": `${schema.titleField}.*` },
-                  { "wildcard": `${schema.descriptionField}.*` },
-                  { "wildcard": `${schema.contentField}.*` }
-                ],
-            },
-          // autocomplete:{
-          //       query:query,
-          //       path:`${titleField}`
-          //   },
-          highlight:{
-            path:[
-              {wildcard:`${schema.descriptionField}.*`},
-              {wildcard:`${schema.contentField}.*`}
-            ]
-          },
-          // compound:{
-          //   should:[
-          //     {
-          //       text:{
-          //         query:query,
-          //         path:{wildcard:"*"},
-          //         fuzzy:{
-          //           maxEdits:1,
-          //           maxExpansions:10
-          //         }
-          //       }
-          //     },
-          //     {
-          //       autocomplete:{
-          //           query:query,
-          //           path:`${titleField}`
-          //       }
-          //     }
-          //   ]
-          // },
-          // facet:{
-          //   operator:{
-          //     compound:{
-          //       should:[
-          //         {
-          //           text:{
-          //             query:query,
-          //             path:{wildcard:"*"},
-          //             // fuzzy:{
-          //             //   maxEdits:1,
-          //             //   maxExpansions:10
-          //             // }
-          //           }
-          //         },
-          //         {
-          //           autocomplete:{
-          //               query:query,
-          //               path:`${titleField}`
-          //           }
-          //         }
-          //       ]
-          //     }
-          //   },
-          //   facets:{
-          //     genres:{
-          //       type:"string",
-          //       path:`${facetField}`
-          //     }
-          //   }
-          // }
-        },
-      },
-      {
-          $limit:10
-      },
-      {
-          $project:{
-            title:`$${schema.titleField}`,
-            image:`$${schema.imageField}`,
-            description:`$${schema.descriptionField}`,
-            highlights: { $meta: "searchHighlights" },
-            score:{$meta:"searchScore"},
-            // facets:"$$SEARCH_META",
-            lang:1
-          }
-      }
-  ]
+async function getInstantResults({query=query,before=null,after=null,pageSize=null}={}) {
+  const token = before ? before : after ? after : ''
+  const page = before ? 'prev' : after ? 'next' : ''
   return new Promise((resolve) => {
-      axios.post(`api/search`,
-          { 
-            pipeline : pipeline
-          },
-      ).then(response => resolve(response))
+      axios.get(`api/search?q=${query}&page=${page}&pageToken=${token}`)
+      .then(response => resolve(response))
       .catch((error) => {
           console.log(error)
           resolve(error.response.data);
