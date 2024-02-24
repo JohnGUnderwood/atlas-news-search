@@ -18,7 +18,7 @@ async function checkCollections(client,db,coll){
 }
 
 async function mongodb(){
-    const uri = process.env.MDB_URI;
+    const uri = process.env.MDBCONNSTR;
     const db = process.env.MDB_DB;
     const coll = "docs";
     try{

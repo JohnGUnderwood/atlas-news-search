@@ -1,11 +1,6 @@
 import { MongoClient } from 'mongodb';
 import dotenv from 'dotenv';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url); // get the resolved path to the file
-const __dirname = path.dirname(__filename); // get the name of the directory
-dotenv.config({path:__dirname + `/../.env`});
+dotenv.config();
 
 const searchIndex = {
   name:"searchIndex",
@@ -109,12 +104,12 @@ const searchIndex = {
 //   }
 // }
 
-console.log("Connection string: ", process.env.MDB_URI);
+console.log("Connection string: ", process.env.MDBCONNSTR);
 console.log("Database: ", process.env.MDB_DB);
 console.log("Collection: ", "docs");
 
 try{
-  const client = new MongoClient(process.env.MDB_URI);
+  const client = new MongoClient(process.env.MDBCONNSTR);
   try{
       await client.connect();
       try{
