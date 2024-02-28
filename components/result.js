@@ -46,20 +46,21 @@ function SearchResult({r,schema}){
 
     return (
         <Card style={{margin:"10px"}}>
-            <div style={{display:"grid",gridTemplateColumns:"230px 70%",gap:"5px",alignItems:"start"}}>
-                <img src={r.image} style={{maxHeight:"120px"}}/>
+            <Label>{r.attribution}</Label>
+            <div style={{display: 'flex',gap:'10px'}}>
+                {r.image?<img src={r.image} style={{maxHeight:"120px"}}/>:<></>}
                 <div>
-                <Subtitle style={{paddingBottom:"5px"}}>
-                    {r.title[r.lang]}
-                </Subtitle>
-                <Description>
-                    {r.highlights?.length > 0
-                        ?
-                        <span dangerouslySetInnerHTML={createHighlighting(r.highlights,`${schema.descriptionField}.${r.lang}`,r.description[r.lang])} />
-                        : 
-                        r.description[r.lang]
-                    }
-                </Description>
+                    <Subtitle style={{paddingBottom:"5px"}}>
+                        {r.title[r.lang]}
+                    </Subtitle>
+                    <Description>
+                        {r.highlights?.length > 0
+                            ?
+                            <span dangerouslySetInnerHTML={createHighlighting(r.highlights,`${schema.descriptionField}.${r.lang}`,r.description[r.lang])} />
+                            : 
+                            r.description[r.lang]
+                        }
+                    </Description>
                 </div>
             </div>
             {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length > 0

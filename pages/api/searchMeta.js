@@ -74,6 +74,10 @@ router.post(async (req, res) => {
                             compound: searchOpts.compound
                         },
                         facets:{
+                            attribution:{
+                                type:"string",
+                                path:"attribution"
+                            },
                             lang: {
                                 type:"string",
                                 path:"lang"

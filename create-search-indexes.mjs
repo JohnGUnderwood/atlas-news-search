@@ -12,6 +12,11 @@ const searchIndex = {
           {"type":"date"},
           {"type":"dateFacet"}
         ],
+        "attribution":[
+          {"type":"string"},
+          {"type":"token"},
+          {"type":"stringFacet"}
+        ],
         "authors":[
           {"type":"string"},
           {"type":"token"},
