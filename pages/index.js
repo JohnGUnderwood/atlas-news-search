@@ -9,50 +9,29 @@ import Facets from '../components/facets';
 import Filters from '../components/filters';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
-import { Tabs, Tab } from '@leafygreen-ui/tabs';
 
 export default function Home(){
-  const [query, setQuery] = useState({terms:'',method:'fts'});
+  const [query, setQuery] = useState({terms:'',method:'fts',filters:{}});
   const [page, setPage] = useState(1);
-  // const [pageSize, setPageSize] = useState(4);
-  const [filters, setFilters] = useState({});
   const [response, setResponse] = useState({});
   const [meta, setMeta] = useState({hits:0});
   const [loading, setLoading] = useState(null);
-  const [selectedTab, setSelectedTab] = useState(0);
   const [instantResults, setInstantResults] = useState(null);
 
-  // useEffect(() => {
-  //   if(lang != 'all'){
-  //     setQuery({...query, filters:{...query.filters, 'lang':{val:lang,type:'equals'}}})
-  //   }else{
-  //     let copiedFilters = query.filters
-  //     delete copiedFilters['lang']
-  //     setQuery({...query,filters:copiedFilters});
-  //   }
-  // },[lang]);
+  useEffect(() => {
+    console.log("query.filters or query,method changed");
+    console.log("query.method",query.method);
+    handleSearch();
+  },[query.filters,query.method]);
 
   useEffect(() => {
-    setPage(1);
-    if(query && query.terms && query.terms != ""){
-      setLoading(true);
-      // getSearchResults({query:query,pageSize:pageSize,filters:filters})
-      getSearchResults(query)
-        .then(resp => {
-          setLoading(false);
-          setResponse(resp.data);
-        })
-        .catch(error => console.log(error));
-      
-      getMeta(query)
-      // getMeta({query:query,filters:filters})
-        .then(resp => {
-          setLoading(false);
-          setMeta(resp.data);
-        })
-        .catch(error => console.log(error));
+    if(query.terms && query.terms != ''){
+      getTypeahead(query)
+      .then(resp => {
+        setInstantResults(resp.data);
+      })
     }
-  },[filters]);
+  },[query.terms]);
 
   const handleSearch = () => {
     if(query && query.terms && query.terms != ""){
@@ -73,11 +52,7 @@ export default function Home(){
   }
 
   const handleQueryChange = (event) => {
-    setQuery({...query,terms:event.target.value});
-    getTypeahead(query)
-    .then(resp => {
-      setInstantResults(resp.data);
-    })
+    setQuery(prevQuery => ({...prevQuery,terms:event.target.value}));
   };
 
   const nextPage = () => {
@@ -103,19 +78,21 @@ export default function Home(){
   }
 
   const handleMethodChange = (m) => {
-    setQuery({...query,method:m});
+    setResponse({});
+    setQuery(prevQuery => ({...prevQuery,method:m}));
   };
 
   const handleAddFilter = (filter,val) => {
-    setQuery({...query,filters:{...query.filters, [filter]:val}});
+    let copiedFilters = {...query.filters};
+    copiedFilters[filter] = val;
+    setQuery(prevQuery => ({...prevQuery, filters: copiedFilters}));
   };
 
   const handleRemoveFilter = (field) => {
-    console.log(field)
-    let copiedFilters = query.filters;
+    let copiedFilters = {...query.filters};
     delete copiedFilters[field]
-    setQuery({...query,filters:copiedFilters});
-  };
+    setQuery(prevQuery => ({...prevQuery, filters: copiedFilters}));
+  }
 
   return (
     <>
@@ -125,100 +102,85 @@ export default function Home(){
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
       instantResults={instantResults}
-      instantField={`${schema.titleField}`}/>
-    <div>
-        <Select 
-          label="Methods"
-          placeholder="Fulltext Search"
-          name="Methods"
-          size="xsmall"
-          defaultValue="fts"
-          onChange={handleMethodChange}
-        >
-          <Option value="vector">Vector</Option>
-        </Select>
-      </div> 
-    <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
-      <Tab name="Fulltext Search">
-        {query.method == "fts"? <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-          <div style={{paddingTop:"35px"}}>
-          {meta?.facets
-            ? 
-            <Facets facets={meta.facets} onFilterChange={handleAddFilter}/>
-            : <></>
-          }
-          </div>
-          <div>
-            {
-              loading
-              ?
-              <Spinner variant="large" description="Loading…"/>
-              :
-              meta.hits > 0
-                ?
-                <div style={{maxWidth:"95%"}}>
-                  {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                  <Pagination currentPage={page}
-                    itemsPerPage={4}
-                    itemsPerPageOptions={[4]}
-                    numTotalItems={meta.hits}
-                    onBackArrowClick={prevPage}
-                    onForwardArrowClick={nextPage}
-                  />
-                  {response? response.results.map(r => (
-                    <SearchResult key={r._id} r={r} schema={schema}></SearchResult>
-                  )):<></>}
-                  <Pagination currentPage={page}
-                    itemsPerPage={4}
-                    itemsPerPageOptions={[4]}
-                    numTotalItems={meta.hits}
-                    onBackArrowClick={prevPage}
-                    onForwardArrowClick={nextPage}
-                  />
-                </div>
-                :
-                <></>
-              
-            }
-          </div>
+      instantField={`${schema.titleField}`}>
+      <Select 
+        label="Search Method"
+        name="Methods"
+        size="xsmall"
+        defaultValue="fts"
+        onChange={handleMethodChange}
+      >
+        <Option value="fts">Fulltext search</Option>
+        <Option value="vector">Vector</Option>
+      </Select>
+    </SearchBanner>
+    {query.method == "fts"?
+      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+        <div style={{paddingTop:"35px"}}>
+        {meta?.facets
+          ? 
+          <Facets facets={meta.facets} onFilterChange={handleAddFilter}/>
+          : <></>
+        }
         </div>
-        :<></>}
-      </Tab>
-      <Tab name="FTS with Cosine Re-ranking">
-        placeholder
-      </Tab>
-      <Tab name="Vector Search">
-        {query.method == "vector" ?<div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-          <div style={{paddingTop:"35px"}}>
-          </div>
-          <div>
-            {
-              loading
+        <div>
+          {
+            loading
+            ?
+            <Spinner variant="large" description="Loading…"/>
+            :
+            meta.hits > 0
               ?
-              <Spinner variant="large" description="Loading…"/>
+              <div style={{maxWidth:"95%"}}>
+                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                <Pagination currentPage={page}
+                  itemsPerPage={4}
+                  itemsPerPageOptions={[4]}
+                  numTotalItems={meta.hits}
+                  onBackArrowClick={prevPage}
+                  onForwardArrowClick={nextPage}
+                />
+                {response.results? response.results.map(r => (
+                  <SearchResult key={r._id} r={r} schema={schema}></SearchResult>
+                )):<></>}
+                <Pagination currentPage={page}
+                  itemsPerPage={4}
+                  itemsPerPageOptions={[4]}
+                  numTotalItems={meta.hits}
+                  onBackArrowClick={prevPage}
+                  onForwardArrowClick={nextPage}
+                />
+              </div>
               :
-              meta.hits > 0
-                ?
-                <div style={{maxWidth:"95%"}}>
-                  {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                  {response? response.results.map(r => (
-                    <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
-                  )):<></>}
-                </div>
-                :
-                <></>
-            }
-          </div>
-        </div> 
-        :<></>}
-      </Tab>
-      <Tab name="Relative Score Fusion">
-        placeholder      
-      </Tab>
-      <Tab name="Reciprocal Rank Fusion">
-        placeholder      
-      </Tab>
-    </Tabs>
+              <></>
+            
+          }
+        </div>
+      </div>
+    :query.method == "vector" ?
+      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+        <div style={{paddingTop:"35px"}}>
+        </div>
+        <div>
+          {
+            loading
+            ?
+            <Spinner variant="large" description="Loading…"/>
+            :
+            meta.hits > 0
+              ?
+              <div style={{maxWidth:"95%"}}>
+                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                {response.results? response.results.map(r => (
+                  <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
+                )):<></>}
+              </div>
+              :
+              <></>
+          }
+        </div>
+      </div> 
+    :<></>}
     
     </>
   )

@@ -42,11 +42,7 @@ router.post(async (req, res) => {
                     { "wildcard": `${schema.titleField}.*` },
                     { "wildcard": `${schema.descriptionField}.*` },
                     { "wildcard": `${schema.contentField}.*` }
-                  ],
-                  fuzzy:{
-                    maxEdits:1,
-                    maxExpansions:10
-                  },
+                  ]
               }
         }
 

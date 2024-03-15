@@ -6,17 +6,35 @@ import { H1, H3 } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import { useState } from 'react';
 
-export default function SearchBanner({appName,query,handleQueryChange,handleSearch,instantResults = null,instantField = null}){
+export default function SearchBanner({appName,query,handleQueryChange,handleSearch,instantResults = null,instantField = null,children=null}){
     const [isFocused, setIsFocused] = useState(false);
 
+    var childrenElements = [];
+    if(Array.isArray(children)){
+        childrenElements = children.map((child,index) => {
+            return (
+                <div key={index} style={{width:"15%",paddingLeft:"10px",marginBottom:"20px"}}>
+                    {child}
+                </div>
+            );
+        });
+    }else if(children){
+        childrenElements = [(
+            <div style={{width:"15%",paddingLeft:"10px",marginBottom:"20px"}}>
+                {children}
+            </div>
+        )];
+    }
+    console.log('num children',childrenElements.length);
+    const searchBarWidth = 90 - childrenElements.length*15;
     return (
         <div className={styles.container}>
             <div style={{width:"200px",alignItems:"center"}}>
                 <H1 style={{textAlign:"center"}}><MongoDBLogoMark height={35}/>Atlas</H1>
                 <H3 style={{textAlign:"center"}}>{appName}</H3>
             </div>
-            <div className={styles.container} style={{paddingTop:"30px",justifyContent:"end",width:"100%",alignItems:"middle",paddingLeft:"16px"}}>
-                <div style={{width:"90%",marginRight:"10px",position:"relative"}}>
+            <div className={styles.container} style={{paddingTop:"30px",justifyContent:"end",width:"100%",paddingLeft:"16px"}}>
+                <div style={{width:`${searchBarWidth}%`,marginRight:"10px",position:"relative"}}>
                     <SearchInput
                         value={query}
                         onChange={(e)=>{ e.preventDefault(); handleQueryChange(e); }}
@@ -47,7 +65,10 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
                         :<></>
                     }
                 </div>
-                <div><Button onClick={()=>handleSearch()} variant="primary">Search</Button></div>
+                <div style={{marginBottom:"20px"}}>
+                    <Button onClick={()=>handleSearch()} variant="primary">Search</Button>
+                </div>
+                {childrenElements?childrenElements:<></>}
             </div>
         </div>
     )
