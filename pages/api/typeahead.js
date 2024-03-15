@@ -1,6 +1,6 @@
 import { createRouter } from 'next-connect';
 import database from '../../middleware/database';
-import { schema } from '../../config.mjs'
+import { schema, languages } from '../../config.mjs'
 
 async function getResults(collection,pipeline){
     try{
@@ -35,43 +35,24 @@ router.post(async (req, res) => {
         console.log(`Request missing 'q' param`)
         res.status(400).send(`Request missing 'q' param`);
     }else{
-        const textOp = {
-            text:{
-                  query:req.query.q,
-                  path: [
-                    { "wildcard": `${schema.titleField}.*` },
-                    { "wildcard": `${schema.descriptionField}.*` },
-                    { "wildcard": `${schema.contentField}.*` }
-                  ],
-                  fuzzy:{
-                    maxEdits:1,
-                    maxExpansions:10
-                  },
-              }
-        }
-
+        
         var searchOpts = {
             index:"searchIndex",
             compound:{
-                must:[textOp],
+                should:[],
                 filter:[]
             },
-            highlight:{
-                path:[
-                    {wildcard:`${schema.descriptionField}.*`},
-                    {wildcard:`${schema.contentField}.*`}
-                ]
-            },
-            sort:{
-                unused:{"$meta":"searchScore"},
-                published:-1
-            }
         }
-      
-        if(req.query.page == 'next' && req.query.pageToken){
-          searchOpts.searchAfter = req.query.pageToken
-        }else if(req.query.page == 'prev' && req.query.pageToken){
-          searchOpts.searchBefore = req.query.pageToken
+
+        for( const lang of languages){
+            searchOpts.compound.should.push(
+                {
+                    autocomplete:{
+                        query:req.query.q,
+                        path: `${schema.titleField}.${lang}`
+                    }
+                }
+            )
         }
 
         if(req.body.filters && Object.keys(req.body.filters).length > 0){
@@ -98,24 +79,13 @@ router.post(async (req, res) => {
             {
                 $project:{
                   title:`$${schema.titleField}`,
-                  image:`$${schema.imageField}`,
-                  description:`$${schema.descriptionField}`,
-                  highlights: { $meta: "searchHighlights" },
-                  score:{$meta:"searchScore"},
-                  paginationToken: {$meta: 'searchSequenceToken'},
-                  lang:1,
-                  attribution:1
+                  lang:1
                 }
             }
         ]
-
         try{
             const response = await getResults(req.collection,pipeline);
-            if(req.query.page == 'prev' && req.query.pageToken){
-                res.status(200).json({results:response.reverse(),query:pipeline});
-            }else{
-                res.status(200).json({results:response,query:pipeline});
-            }
+            res.status(200).json({results:response,query:pipeline});
         }catch(error){
             res.status(405).json({'error':`${error}`,query:pipeline});
         }

@@ -1,6 +1,6 @@
 import { createRouter } from 'next-connect';
 import database from '../../middleware/database';
-import schema from '../../config.mjs'
+import { schema } from '../../config.mjs'
 
 async function getResults(collection,pipeline){
     try{

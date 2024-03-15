@@ -1,5 +1,5 @@
 // schema variables
-const schema = {
+export const schema = {
     descriptionField : "summary",
     contentField : "content",
     titleField : "title",
@@ -8,4 +8,4 @@ const schema = {
     facetField : "tags",
 }
 
-export default schema;
+export const languages = ['en','es','fr']

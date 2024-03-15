@@ -1,0 +1,28 @@
+/* Mobile devices (default) */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    padding-left: 10px;
+}
+  
+/* Tablets, small desktops */
+@media (min-width: 600px) {
+    .container {
+        flex-direction: row;
+    }
+}
+
+/* Medium desktops */
+@media (min-width: 900px) {
+    .container {
+        flex-direction: row;
+    }
+}
+
+/* Large desktops and high-resolution devices */
+@media (min-width: 1200px) {
+    .container {
+        flex-direction: row;
+    }
+}
