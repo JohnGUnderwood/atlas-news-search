@@ -66,8 +66,6 @@ export default function Home(){
       getMeta({query:query,filters:filters})
       .then(resp => setMeta(resp.data))
       .catch(error => console.log(error));
-    }else{
-      setQuery(null);
     }
   }
 
@@ -83,17 +81,10 @@ export default function Home(){
 
   const handleQueryChange = (event) => {
     setQuery(event.target.value);
-    console.log('query change',event.target.value);
     getTypeahead({query:event.target.value,filters:filters})
     .then(resp => {
-      console.log('instant results',resp.data)
       setInstantResults(resp.data);
     })
-    // .catch(error => console.log(error));
-
-    // getMeta({query:event.target.value,filters:filters})
-    //   .then(resp => setMeta(resp.data))
-    //   .catch(error => console.log(error));
   };
 
   const nextPage = () => {
@@ -137,6 +128,7 @@ export default function Home(){
     <>
     <Header/>
     <SearchBanner appName="News Search"
+      query={query}
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
       instantResults={instantResults}
