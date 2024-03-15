@@ -1,6 +1,6 @@
 import { createRouter } from 'next-connect';
-import database from '../../middleware/database';
-import { schema } from '../../config.mjs'
+import database from '../../../middleware/database';
+import { schema } from '../../../config.mjs'
 
 async function getResults(collection,pipeline){
     try{
@@ -68,10 +68,10 @@ router.post(async (req, res) => {
             }
         }
       
-        if(req.query.page == 'next' && req.query.pageToken){
-          searchOpts.searchAfter = req.query.pageToken
-        }else if(req.query.page == 'prev' && req.query.pageToken){
-          searchOpts.searchBefore = req.query.pageToken
+        if(req.body.page == 'next' && req.body.pageToken){
+          searchOpts.searchAfter = req.body.pageToken
+        }else if(req.body.page == 'prev' && req.body.pageToken){
+          searchOpts.searchBefore = req.body.pageToken
         }
 
         if(req.body.filters && Object.keys(req.body.filters).length > 0){

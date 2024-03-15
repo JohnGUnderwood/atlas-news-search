@@ -2,9 +2,8 @@ import OpenAI from 'openai';
 import { createRouter } from 'next-connect';
 
 class Model {
-    constructor(apiKey,modelName){
+    constructor(apiKey){
         this.apiKey = apiKey
-        this.modelName = modelName
         try{
             this.model = new OpenAI({apiKey:apiKey});
         }catch(error){
@@ -16,7 +15,7 @@ class Model {
     embed = async function(string){
         try{
             const resp = await this.model.embeddings.create({
-                model:this.modelName,
+                model:"text-embedding-ada-002",
                 input:string,
                 encoding_format:"float"
               })

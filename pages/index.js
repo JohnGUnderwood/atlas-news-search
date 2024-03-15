@@ -1,6 +1,6 @@
 import axios from 'axios';
 import Header from '../components/head';
-import SearchResult from '../components/result'
+import { SearchResult, ChunksResult }from '../components/results'
 import { useState, useEffect} from 'react';
 import Pagination from '@leafygreen-ui/pagination';
 import { schema } from '../config.mjs'
@@ -12,10 +12,9 @@ import SearchBanner from '../components/searchBanner/SearchBanner';
 import { Tabs, Tab } from '@leafygreen-ui/tabs';
 
 export default function Home(){
-  const [query, setQuery] = useState(null);
+  const [query, setQuery] = useState({terms:'',method:'fts'});
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(4);
-  const [lang, setLang] = useState('all');
+  // const [pageSize, setPageSize] = useState(4);
   const [filters, setFilters] = useState({});
   const [response, setResponse] = useState({});
   const [meta, setMeta] = useState({hits:0});
@@ -23,28 +22,30 @@ export default function Home(){
   const [selectedTab, setSelectedTab] = useState(0);
   const [instantResults, setInstantResults] = useState(null);
 
-  useEffect(() => {
-    if(lang != 'all'){
-      setFilters(filters => ({...filters, 'lang':{val:lang,type:'equals'}}));
-    }else{
-      let copiedFilters = {...filters}
-      delete copiedFilters['lang']
-      setFilters(filters => ({...copiedFilters}));
-    }
-  },[lang]);
+  // useEffect(() => {
+  //   if(lang != 'all'){
+  //     setQuery({...query, filters:{...query.filters, 'lang':{val:lang,type:'equals'}}})
+  //   }else{
+  //     let copiedFilters = query.filters
+  //     delete copiedFilters['lang']
+  //     setQuery({...query,filters:copiedFilters});
+  //   }
+  // },[lang]);
 
   useEffect(() => {
     setPage(1);
-    if(query && query != ""){
+    if(query && query.terms && query.terms != ""){
       setLoading(true);
-      getSearchResults({query:query,pageSize:pageSize,filters:filters})
+      // getSearchResults({query:query,pageSize:pageSize,filters:filters})
+      getSearchResults(query)
         .then(resp => {
           setLoading(false);
-          setResponse(resp.datax);
+          setResponse(resp.data);
         })
         .catch(error => console.log(error));
-
-      getMeta({query:query,filters:filters})
+      
+      getMeta(query)
+      // getMeta({query:query,filters:filters})
         .then(resp => {
           setLoading(false);
           setMeta(resp.data);
@@ -54,34 +55,26 @@ export default function Home(){
   },[filters]);
 
   const handleSearch = () => {
-    if(query && query != ""){
+    if(query && query.terms && query.terms != ""){
       setLoading(true);
-      getSearchResults({query:query,pageSize:pageSize,filters:filters})
+      // getSearchResults({query:query,pageSize:pageSize,filters:filters})
+      getSearchResults(query)
       .then(resp => {
         setLoading(false);
         setResponse(resp.data);
       })
       .catch(error => console.log(error));
 
-      getMeta({query:query,filters:filters})
+      // getMeta({query:query,filters:filters})
+      getMeta(query)
       .then(resp => setMeta(resp.data))
       .catch(error => console.log(error));
     }
   }
 
-  const handleVectorSearch = () => {
-    if(query && query != ""){
-      vectorSearch(query)
-      .then(resp => setResponse(resp.data))
-      .catch(error => console.log(error));
-    }else{
-      setQuery(null);
-    }
-  }
-
   const handleQueryChange = (event) => {
-    setQuery(event.target.value);
-    getTypeahead({query:event.target.value,filters:filters})
+    setQuery({...query,terms:event.target.value});
+    getTypeahead(query)
     .then(resp => {
       setInstantResults(resp.data);
     })
@@ -90,7 +83,7 @@ export default function Home(){
   const nextPage = () => {
     setPage(page+1);
     setLoading(true);
-    getSearchResults({query:query,page:'next',token:response.results[response.results.length-1].paginationToken,pageSize:pageSize,filters:filters})
+    getSearchResults({...query,page:'next',token:response.results[response.results.length-1].paginationToken})
     .then(resp => {
       setLoading(false);
       setResponse(resp.data);
@@ -101,7 +94,7 @@ export default function Home(){
   const prevPage = () => {
     setPage(page-1);
     setLoading(true);
-    getSearchResults({query:query,page:'prev',token:response.results[0].paginationToken,pageSize:pageSize,filters:filters})
+    getSearchResults({...query,query,page:'prev',token:response.results[0].paginationToken})
     .then(resp => {
       setLoading(false);
       setResponse(resp.data);
@@ -109,57 +102,45 @@ export default function Home(){
     .catch(error => console.log(error));
   }
 
-  const handleLanguageChange = (lang) => {
-    setLang(lang);
+  const handleMethodChange = (m) => {
+    setQuery({...query,method:m});
   };
 
   const handleAddFilter = (filter,val) => {
-    setFilters(filters => ({...filters, [filter]:val}));
+    setQuery({...query,filters:{...query.filters, [filter]:val}});
   };
 
   const handleRemoveFilter = (field) => {
     console.log(field)
-    let copiedFilters = filters;
+    let copiedFilters = query.filters;
     delete copiedFilters[field]
-    setFilters(filters => ({...copiedFilters}));
+    setQuery({...query,filters:copiedFilters});
   };
 
   return (
     <>
     <Header/>
     <SearchBanner appName="News Search"
-      query={query}
+      query={query.terms}
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
       instantResults={instantResults}
       instantField={`${schema.titleField}`}/>
-    {/* <div className={styles.container}>
-      <div style={{width:"160px",alignItems:"center"}}>
-        <H1 style={{textAlign:"center"}}><MongoDBLogoMark height={35}/>Atlas</H1>
-        <H3 style={{textAlign:"center"}}>News Search</H3>
-      </div>
-      <div className={styles.container} style={{paddingTop:"30px",justifyContent:"end",width:"100%",alignItems:"middle",paddingLeft:"16px"}}>
-        <div style={{width:"90%",marginRight:"10px"}}><SearchInput onChange={handleQueryChange} aria-label="some label" style={{marginBottom:"20px"}}></SearchInput></div>
-        <div><Button onClick={()=>handleSearch()} variant="primary">Search</Button></div>
-        <div>
-          <Select 
-            label="Languages"
-            placeholder="All"
-            name="Languages"
-            size="xsmall"
-            defaultValue="all"
-            onChange={handleLanguageChange}
-          >
-            <Option value="en">English</Option>
-            <Option value="fr">French</Option>
-            <Option value="es">Spanish</Option>
-          </Select>
-        </div> 
-      </div>
-    </div> */}
+    <div>
+        <Select 
+          label="Methods"
+          placeholder="Fulltext Search"
+          name="Methods"
+          size="xsmall"
+          defaultValue="fts"
+          onChange={handleMethodChange}
+        >
+          <Option value="vector">Vector</Option>
+        </Select>
+      </div> 
     <Tabs style={{marginTop:"15px"}} setSelected={setSelectedTab} selected={selectedTab}>
       <Tab name="Fulltext Search">
-        <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+        {query.method == "fts"? <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
           <div style={{paddingTop:"35px"}}>
           {meta?.facets
             ? 
@@ -176,7 +157,7 @@ export default function Home(){
               meta.hits > 0
                 ?
                 <div style={{maxWidth:"95%"}}>
-                  {Object.keys(filters).length > 0 ? <Filters filters={filters} handleRemoveFilter={handleRemoveFilter}/> :<></>}
+                  {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
                   <Pagination currentPage={page}
                     itemsPerPage={4}
                     itemsPerPageOptions={[4]}
@@ -184,9 +165,9 @@ export default function Home(){
                     onBackArrowClick={prevPage}
                     onForwardArrowClick={nextPage}
                   />
-                  {response.results.map(r => (
+                  {response? response.results.map(r => (
                     <SearchResult key={r._id} r={r} schema={schema}></SearchResult>
-                  ))}
+                  )):<></>}
                   <Pagination currentPage={page}
                     itemsPerPage={4}
                     itemsPerPageOptions={[4]}
@@ -201,12 +182,35 @@ export default function Home(){
             }
           </div>
         </div>
+        :<></>}
       </Tab>
       <Tab name="FTS with Cosine Re-ranking">
         placeholder
       </Tab>
       <Tab name="Vector Search">
-        placeholder      
+        {query.method == "vector" ?<div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+          <div style={{paddingTop:"35px"}}>
+          </div>
+          <div>
+            {
+              loading
+              ?
+              <Spinner variant="large" description="Loading…"/>
+              :
+              meta.hits > 0
+                ?
+                <div style={{maxWidth:"95%"}}>
+                  {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                  {response? response.results.map(r => (
+                    <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
+                  )):<></>}
+                </div>
+                :
+                <></>
+            }
+          </div>
+        </div> 
+        :<></>}
       </Tab>
       <Tab name="Relative Score Fusion">
         placeholder      
@@ -258,13 +262,15 @@ async function vectorSearch(query) {
   });
 }
 
-async function getSearchResults({query=query,page=null,token=null,pageSize=null,filters=null}={}) {
-  const params = `q=${query}&page=${page}&pageToken=${token}`
+async function getSearchResults({method=method,terms=terms,page=null,token=null,pageSize=null,filters=null}={}) {
+  const params = `q=${terms}`
   const body = {
-    filters:filters
+    filters:filters,
+    page:page,
+    pageToken:token
   }
   return new Promise((resolve) => {
-      axios.post(`api/search?${params}`,
+      axios.post(`api/search/${method}?${params}`,
         body
       )
       .then(response => resolve(response))
@@ -275,13 +281,13 @@ async function getSearchResults({query=query,page=null,token=null,pageSize=null,
   });
 }
 
-async function getMeta({query=query,filters=null}={}) {
-  const params = `q=${query}`
+async function getMeta({terms=terms,filters=null}={}) {
+  const params = `q=${terms}`
   const body = {
     filters:filters
   }
   return new Promise((resolve) => {
-      axios.post(`api/searchMeta?${params}`,
+      axios.post(`api/search/meta?${params}`,
         body
       )
       .then(response => resolve(response))
@@ -292,13 +298,30 @@ async function getMeta({query=query,filters=null}={}) {
   });
 }
 
-async function getTypeahead({query=query,filters=null}={}) {
-  const params = `q=${query}`
+async function getTypeahead({terms=terms,filters=null}={}) {
+  const params = `q=${terms}`
   const body = {
     filters:filters
   }
   return new Promise((resolve) => {
       axios.post(`api/typeahead?${params}`,
+        body
+      )
+      .then(response => resolve(response))
+      .catch((error) => {
+          console.log(error)
+          resolve(error.response.data);
+      })
+  });
+}
+
+async function getVectorSearchResults({terms=terms,filters=null}={}) {
+  const params = `q=${terms}`
+  const body = {
+    filters:filters,
+  }
+  return new Promise((resolve) => {
+      axios.post(`api/search/vector?${params}`,
         body
       )
       .then(response => resolve(response))

@@ -2,7 +2,7 @@ import { Subtitle, Description, Label } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Icon from '@leafygreen-ui/icon';
 import { useState, } from 'react';
-import styles from './result.module.css';
+import styles from './results.module.css';
 
 function getHighlightsHTML(highlightsField,fieldName){
     const highlightedStrings = highlightsField
@@ -66,7 +66,7 @@ function SearchResult({r,schema}){
             {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length > 0
                 ?
                 <div style={{paddingTop:"25px"}}>
-                    <span><Label>Content highlights - {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length}</Label><Icon className={styles.higlightsToggle} onClick={toggleHighlights} glyph={showHighlights? "ChevronDown": "ChevronUp"} fill="None" /></span>
+                    <span><Label>Content highlights - {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).length}</Label><Icon className={styles.toggle} onClick={toggleHighlights} glyph={showHighlights? "ChevronDown": "ChevronUp"} fill="None" /></span>
                     {showHighlights?
                         <Description>
                             {getHighlightsHTML(r.highlights,`${schema.contentField}.${r.lang}`).map((h,i) => (
@@ -84,4 +84,45 @@ function SearchResult({r,schema}){
     )
 }
 
-export default SearchResult;
+function ChunksResult({r,schema}){
+    const [showChunks, setShowChunks] = useState(false);
+
+    const toggleChunks = () => {
+        setShowChunks(!showChunks);
+    }
+
+    return (
+        <Card style={{margin:"10px"}}>
+            <Label>{r.attribution}</Label>
+            <div style={{display: 'flex',gap:'10px'}}>
+                <div>
+                    <Subtitle style={{paddingBottom:"5px"}}>
+                        {r.title}
+                    </Subtitle>
+                    <Description>
+                        {r.chunks[0].content}
+                    </Description>
+                </div>
+            </div>
+            {r.chunks.length > 1
+                ?
+                <div style={{paddingTop:"25px"}}>
+                    <span><Label>{r.chunks.length - 1} more chunks</Label><Icon className={styles.toggle} onClick={toggleChunks} glyph={showChunks? "ChevronDown": "ChevronUp"} fill="None" /></span>
+                    {showChunks?
+                        <Description>
+                            {r.chunks.slice(1).map((c,i) => (
+                                <p key={`${r._id}_chunk_p${i}`}>{c.content}</p>
+                            ))}
+                        </Description>
+                        :
+                        <></>
+                    }
+                </div>
+                :
+                <></>
+            }
+        </Card>
+    )
+}
+
+export { SearchResult, ChunksResult };

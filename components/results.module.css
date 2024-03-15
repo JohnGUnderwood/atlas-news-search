@@ -1,8 +1,8 @@
-.higlightsToggle {
+.toggle {
     float: right;
     border-radius: 8px;
 }
-.higlightsToggle:hover {
+.toggle:hover {
     background-color: #889397;
     /* background-color: red; */
     cursor: pointer;
