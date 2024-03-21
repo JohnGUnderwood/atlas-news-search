@@ -20,7 +20,7 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
         });
     }else if(children){
         childrenElements = [(
-            <div style={{width:"15%",paddingLeft:"10px",marginBottom:"20px"}}>
+            <div key={0} style={{width:"15%",paddingLeft:"10px",marginBottom:"20px"}}>
                 {children}
             </div>
         )];

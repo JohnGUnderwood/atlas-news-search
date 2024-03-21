@@ -99,6 +99,7 @@ function ChunksResult({r,schema}){
                     <Subtitle style={{paddingBottom:"5px"}}>
                         {r.title}
                     </Subtitle>
+                    <Label>Most Relevant Chunk: {r.chunks[0].chunk} - Score: {r.chunks[0].score.toFixed(5)}</Label>
                     <Description>
                         {r.chunks[0].content}
                     </Description>
@@ -111,7 +112,10 @@ function ChunksResult({r,schema}){
                     {showChunks?
                         <Description>
                             {r.chunks.slice(1).map((c,i) => (
-                                <p key={`${r._id}_chunk_p${i}`}>{c.content}</p>
+                                <div key={`${r._id}_chunk_p${i}`}>
+                                    <Label key={`${r._id}_score_p${i}`}>Chunk: {c.chunk} - Score: {c.score.toFixed(5)}</Label>
+                                    <p key={`${r._id}_content_p${i}`}>{c.content}</p>
+                                </div>
                             ))}
                         </Description>
                         :

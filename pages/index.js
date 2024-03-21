@@ -112,6 +112,7 @@ export default function Home(){
       >
         <Option value="fts">Fulltext search</Option>
         <Option value="vector">Vector</Option>
+        <Option value="rrf">Reciprocal Rank Fusion</Option>
       </Select>
     </SearchBanner>
     {query.method == "fts"?
@@ -157,7 +158,7 @@ export default function Home(){
           }
         </div>
       </div>
-    :query.method == "vector" ?
+    :query.method == "vector" || query.method == "rrf" ?
       <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
         <div style={{paddingTop:"35px"}}>
         </div>

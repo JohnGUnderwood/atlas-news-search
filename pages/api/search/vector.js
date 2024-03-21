@@ -17,21 +17,6 @@ const router = createRouter();
 selectModel(router);
 router.use(database);
 
-// router.post(async (req, res) => {
-//     if(!req.body.pipeline){
-//         console.log(`Request missing 'pipeline' data`)
-//         res.status(400).send(`Request missing 'pipeline' data`);
-//     }else{
-//         const pipeline = req.body.pipeline
-//         try{
-//             const response = await getResults(req.collection,pipeline);
-//             res.status(200).json({results:response,query:pipeline});
-//         }catch(error){
-//             res.status(405).json({'error':`${error}`,query:pipeline});
-//         }
-//     }
-// });
-
 router.post(async (req, res) => {
     if(!req.query.q){
         console.log(`Request missing 'q' param`)
@@ -63,12 +48,25 @@ router.post(async (req, res) => {
                 $vectorSearch:searchOpts
             },
             {
+                $unset:"embedding"
+            },
+            {
+                $addFields:{
+                    score:{$meta:"vectorSearchScore"}
+                }
+            },
+            {
                 $group:{
                     _id:"$parent_id",
                     chunks:{$push:"$$ROOT"},
                     lang:{$first:"$lang"},
                     title:{$first:"$title"},
                     attribution:{$first:"$attribution"},
+                    max:{$max:"$score"},
+                    avg:{$avg:"$score"},
+                    sum:{$sum:"$score"},
+                    count:{$count:{}}
+                    
                 }
             },
             {
@@ -78,6 +76,17 @@ router.post(async (req, res) => {
                   lang:1,
                   attribution:1,
                   title:1,
+                  score:{
+                    avg:"$avg",
+                    max:"$max",
+                    sum:"$sum",
+                    count:"$count"
+                  }
+                }
+            },
+            {
+                $sort:{
+                    "score.max":-1
                 }
             }
         ]
