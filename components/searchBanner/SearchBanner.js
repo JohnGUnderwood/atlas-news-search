@@ -25,7 +25,6 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
             </div>
         )];
     }
-    console.log('num children',childrenElements.length);
     const searchBarWidth = 90 - childrenElements.length*15;
     return (
         <div className={styles.container}>

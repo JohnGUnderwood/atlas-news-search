@@ -1,6 +1,5 @@
 import { createRouter } from 'next-connect';
 import database from '../../../middleware/database';
-import { schema } from '../../../config.mjs'
 
 async function getResults(collection,pipeline){
     try{
@@ -24,9 +23,9 @@ router.post(async (req, res) => {
             text:{
                   query:req.query.q,
                   path: [
-                    { "wildcard": `${schema.titleField}.*` },
-                    { "wildcard": `${schema.descriptionField}.*` },
-                    { "wildcard": `${schema.contentField}.*` }
+                    { "wildcard": 'title.*'},
+                    { "wildcard": 'summary.*' },
+                    { "wildcard": 'content.*' }
                   ]
               }
         }
@@ -39,8 +38,8 @@ router.post(async (req, res) => {
             },
             highlight:{
                 path:[
-                    {wildcard:`${schema.descriptionField}.*`},
-                    {wildcard:`${schema.contentField}.*`}
+                    {wildcard:'summary.*'},
+                    {wildcard:'content.*'}
                 ]
             },
             sort:{
@@ -78,9 +77,9 @@ router.post(async (req, res) => {
             },
             {
                 $project:{
-                  title:`$${schema.titleField}`,
-                  image:`$${schema.imageField}`,
-                  description:`$${schema.descriptionField}`,
+                  title:'$title',
+                  image:'$media_thumbnail',
+                  description:'$summary',
                   highlights: { $meta: "searchHighlights" },
                   score:{$meta:"searchScore"},
                   paginationToken: {$meta: 'searchSequenceToken'},

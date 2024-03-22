@@ -1,6 +1,6 @@
 import { createRouter } from 'next-connect';
 import database from '../../middleware/database';
-import { schema, languages } from '../../config.mjs'
+import { languages } from '../config.mjs'
 
 async function getResults(collection,pipeline){
     try{
@@ -49,7 +49,7 @@ router.post(async (req, res) => {
                 {
                     autocomplete:{
                         query:req.query.q,
-                        path: `${schema.titleField}.${lang}`
+                        path: `title.${lang}`
                     }
                 }
             )
@@ -78,7 +78,7 @@ router.post(async (req, res) => {
             },
             {
                 $project:{
-                  title:`$${schema.titleField}`,
+                  title:1,
                   lang:1
                 }
             }

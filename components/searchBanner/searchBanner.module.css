@@ -11,7 +11,7 @@
     .container {
         flex-direction: row;
         padding-right: 30px;
-        align-items: center;
+        align-items: end;
     }
 }
 
@@ -20,7 +20,7 @@
     .container {
         flex-direction: row;
         padding-right: 60px;
-        align-items: center;
+        align-items: end;
     }
 }
 
@@ -29,7 +29,7 @@
     .container {
         flex-direction: row;
         padding-right: 80px;
-        align-items: center;
+        align-items: end;
 
     }
 }

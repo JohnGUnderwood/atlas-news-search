@@ -3,7 +3,6 @@ import Header from '../components/head';
 import { SearchResult, ChunksResult }from '../components/results'
 import { useState, useEffect} from 'react';
 import Pagination from '@leafygreen-ui/pagination';
-import { schema } from '../config.mjs'
 import { Option, OptionGroup, Select, Size } from '@leafygreen-ui/select';
 import Facets from '../components/facets';
 import Filters from '../components/filters';
@@ -17,6 +16,15 @@ export default function Home(){
   const [meta, setMeta] = useState({hits:0});
   const [loading, setLoading] = useState(null);
   const [instantResults, setInstantResults] = useState(null);
+
+  const schema = {
+    descriptionField : "summary",
+    contentField : "content",
+    titleField : "title",
+    imageField : "media_thumbnail",
+    vectorField : "plot_embedding",
+    facetField : "tags",
+  }
 
   useEffect(() => {
     console.log("query.filters or query,method changed");
@@ -102,7 +110,7 @@ export default function Home(){
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
       instantResults={instantResults}
-      instantField={`${schema.titleField}`}>
+      instantField={'title'}>
       <Select 
         label="Search Method"
         name="Methods"

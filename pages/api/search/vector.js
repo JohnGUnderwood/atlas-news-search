@@ -1,8 +1,6 @@
 import { createRouter } from 'next-connect';
 import database from '../../../middleware/database';
-import { schema } from '../../../config.mjs'
 import selectModel from '../../../middleware/selectModel';
-import embed from '../embed';
 
 async function getResults(collection,pipeline){
     try{
@@ -23,8 +21,6 @@ router.post(async (req, res) => {
         res.status(400).send(`Request missing 'q' param`);
     }else{
         const embedding = await req.model.embed(req.query.q);
-        // const embeddingResp = await axios.get('http://localhost:3020/api/embed?terms='+);
-        // console.log(embedding);
         const searchOpts = {
             index:"vectorIndex",
             path:"embedding",

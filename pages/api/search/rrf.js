@@ -1,8 +1,6 @@
 import { createRouter } from 'next-connect';
 import database from '../../../middleware/database';
-import { schema } from '../../../config.mjs'
 import selectModel from '../../../middleware/selectModel';
-import embed from '../embed';
 
 async function getResults(collection,pipeline){
     try{

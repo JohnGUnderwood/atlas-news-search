@@ -1,6 +1,5 @@
 import { createRouter } from 'next-connect';
 import database from '../../../middleware/database';
-import { schema } from '../../../config.mjs';
 
 async function getResults(collection,pipeline){
     try{
@@ -24,9 +23,9 @@ router.post(async (req, res) => {
             text:{
                   query:req.query.q,
                   path: [
-                    { "wildcard": `${schema.titleField}.*` },
-                    { "wildcard": `${schema.descriptionField}.*` },
-                    { "wildcard": `${schema.contentField}.*` }
+                    { "wildcard": 'title.*' },
+                    { "wildcard": 'summary.*' },
+                    { "wildcard": 'content.*' }
                   ],
                   fuzzy:{
                     maxEdits:1,
@@ -43,8 +42,8 @@ router.post(async (req, res) => {
             },
             highlight:{
                 path:[
-                    {wildcard:`${schema.descriptionField}.*`},
-                    {wildcard:`${schema.contentField}.*`}
+                    {wildcard:'summary.*'},
+                    {wildcard:'content.*'}
                 ]
             }
         }
