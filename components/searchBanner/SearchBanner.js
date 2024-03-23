@@ -1,4 +1,4 @@
-import styles from './SearchBanner.module.css';
+import styles from './searchBanner.module.css';
 import { MongoDBLogoMark } from "@leafygreen-ui/logo";
 import {SearchInput, SearchResult} from '@leafygreen-ui/search-input';
 import Button from "@leafygreen-ui/button";
