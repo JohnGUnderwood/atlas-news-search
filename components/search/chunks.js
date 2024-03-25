@@ -2,7 +2,7 @@ import { Subtitle, Description, Label } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Icon from '@leafygreen-ui/icon';
 import { useState, } from 'react';
-import styles from './results.module.css';
+import styles from './chunks.module.css';
 
 export default function ChunksResult({r,schema}){
     const [showChunks, setShowChunks] = useState(false);
@@ -32,9 +32,9 @@ export default function ChunksResult({r,schema}){
                     {showChunks?
                         <Description>
                             {r.chunks.slice(1).map((c,i) => (
-                                <div key={`${r._id}_chunk_p${i}`}>
+                                <div className={styles.chunk}  key={`${r._id}_chunk_p${i}`}>
                                     <Label key={`${r._id}_score_p${i}`}>Chunk: {c.chunk} - Score: {c.score.toFixed(5)}</Label>
-                                    <p key={`${r._id}_content_p${i}`}>{c.content}</p>
+                                    <div key={`${r._id}_content_p${i}`}>{c.content}</div>
                                 </div>
                             ))}
                         </Description>
