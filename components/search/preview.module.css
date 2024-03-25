@@ -1,0 +1,41 @@
+/* preview.module.css */
+.previewDiv {
+    position: fixed;
+    top: 0px;
+    overflow: hidden;
+    right: 0;
+    width: 70%;
+    height: 100%;
+    overflow: auto;
+    animation: slide-in 0.5s forwards;
+    border-top-right-radius: 0px;
+    border-bottom-right-radius: 0px;
+    z-index: 9999;
+    opacity:97%;
+}
+
+.previewHeading {
+    display: flex;
+    flex-direction: row;
+    grid-template-columns: 5% 90%;
+    gap: 10px;
+    align-items: center;
+}
+
+.previewHeading a svg {
+    width:24px;
+    height:24px;
+}
+
+.previewDiv svg {
+    margin-top:8px;
+}
+
+.previewDiv svg:hover{
+    cursor: pointer;
+}
+
+@keyframes slide-in {
+    0% { right: -80%; }
+    100% { right: 0; }
+}

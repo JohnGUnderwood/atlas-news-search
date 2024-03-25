@@ -45,12 +45,17 @@ async function mongodb(){
     }
 }
 
+let dbClient;
+
 async function middleware(req, res, next) {
-  req.dbClient = await mongodb();
-  req.db = req.dbClient.db(process.env.MDB_DB);
-  req.collection = req.db.collection("docs");
-  req.chunks = req.db.collection("docs_chunks");
-  return next();
+    if (!dbClient) {
+        dbClient = await mongodb();
+    }
+    req.dbClient = dbClient;
+    req.db = req.dbClient.db(process.env.MDB_DB);
+    req.collection = req.db.collection("docs");
+    req.chunks = req.db.collection("docs_chunks");
+    return next();
 }
 
 const database = createRouter();

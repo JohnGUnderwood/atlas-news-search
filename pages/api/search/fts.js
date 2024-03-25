@@ -84,7 +84,8 @@ router.post(async (req, res) => {
                   score:{$meta:"searchScore"},
                   paginationToken: {$meta: 'searchSequenceToken'},
                   lang:1,
-                  attribution:1
+                  attribution:1,
+                  link:1
                 }
             }
         ]

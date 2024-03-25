@@ -1,11 +1,9 @@
 import axios from 'axios';
 import Header from '../components/head';
-import { SearchResult, ChunksResult }from '../components/results'
+import { Facets, Filters, SearchResult, ChunksResult }from '../components/search'
 import { useState, useEffect} from 'react';
 import Pagination from '@leafygreen-ui/pagination';
 import { Option, OptionGroup, Select, Size } from '@leafygreen-ui/select';
-import Facets from '../components/facets';
-import Filters from '../components/filters';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
 
@@ -16,6 +14,7 @@ export default function Home(){
   const [meta, setMeta] = useState({hits:0});
   const [loading, setLoading] = useState(null);
   const [instantResults, setInstantResults] = useState(null);
+  const [preview, setPreview] = useState({id:'',show:false});
 
   const schema = {
     descriptionField : "summary",
@@ -123,6 +122,7 @@ export default function Home(){
         <Option value="rrf">Reciprocal Rank Fusion</Option>
       </Select>
     </SearchBanner>
+    {/* <Preview preview={preview} setPreview={setPreview}></Preview> */}
     {query.method == "fts"?
       <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
         <div style={{paddingTop:"35px"}}>
@@ -150,7 +150,7 @@ export default function Home(){
                   onForwardArrowClick={nextPage}
                 />
                 {response.results? response.results.map(r => (
-                  <SearchResult key={r._id} r={r} schema={schema}></SearchResult>
+                  <SearchResult query={query.terms} key={r._id} r={r} schema={schema} setPreview={setPreview}></SearchResult>
                 )):<></>}
                 <Pagination currentPage={page}
                   itemsPerPage={4}
@@ -190,47 +190,8 @@ export default function Home(){
         </div>
       </div> 
     :<></>}
-    
     </>
   )
-}
-
-async function vectorSearch(query) {
-
-  const embeddingResp = await axios.get('api/embed?terms='+query);
-
-  const pipeline = [
-    {
-      $vectorSearch:{
-        index: "vectorIndex",
-        queryVector: embeddingResp.data,
-        path:`${schema.vectorField}`,
-        numCandidates:50,
-        limit:10
-      }
-    },
-    {
-      $project:{
-          title:`$${schema.titleField}`,
-          image:`$${schema.imageField}`,
-          description:`$${schema.descriptionField}`,
-          score:{$meta:"searchScore"},
-          lang:1,
-          attribution:1,
-      }
-    }
-  ]
-  return new Promise((resolve) => {
-    axios.post(`api/search`,
-        { 
-          pipeline : pipeline
-        },
-    ).then(response => resolve(response))
-    .catch((error) => {
-        console.log(error)
-        resolve(error.response.data);
-    })
-  });
 }
 
 async function getSearchResults({method=method,terms=terms,page=null,token=null,pageSize=null,filters=null}={}) {
@@ -276,23 +237,6 @@ async function getTypeahead({terms=terms,filters=null}={}) {
   }
   return new Promise((resolve) => {
       axios.post(`api/typeahead?${params}`,
-        body
-      )
-      .then(response => resolve(response))
-      .catch((error) => {
-          console.log(error)
-          resolve(error.response.data);
-      })
-  });
-}
-
-async function getVectorSearchResults({terms=terms,filters=null}={}) {
-  const params = `q=${terms}`
-  const body = {
-    filters:filters,
-  }
-  return new Promise((resolve) => {
-      axios.post(`api/search/vector?${params}`,
         body
       )
       .then(response => resolve(response))

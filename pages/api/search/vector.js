@@ -58,6 +58,7 @@ router.post(async (req, res) => {
                     lang:{$first:"$lang"},
                     title:{$first:"$title"},
                     attribution:{$first:"$attribution"},
+                    link:{$first:"$link"},
                     max:{$max:"$score"},
                     avg:{$avg:"$score"},
                     sum:{$sum:"$score"},
@@ -71,6 +72,7 @@ router.post(async (req, res) => {
                   chunks:1,
                   lang:1,
                   attribution:1,
+                  link:1,
                   title:1,
                   score:{
                     avg:"$avg",

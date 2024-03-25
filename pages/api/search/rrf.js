@@ -184,6 +184,7 @@ router.post(async (req, res) => {
                   parent_id: {
                     $first: "$parent_id",
                   },
+                  link:{$first:"$link"}
                 },
               },
               {
@@ -213,6 +214,7 @@ router.post(async (req, res) => {
                   attribution: {
                     $first: "$attribution",
                   },
+                  link:{$first:"$link"},
                   max: {
                     $max: "$score",
                   },
@@ -233,6 +235,7 @@ router.post(async (req, res) => {
                   chunks: 1,
                   lang: 1,
                   attribution: 1,
+                  link:1,
                   title: 1,
                   score: {
                     avg: "$avg",
