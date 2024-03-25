@@ -27,7 +27,7 @@ class Model {
 }
 
 async function middleware(req,res,next) {
-    const model = new Model(process.env.MISTRALAPIKEY);
+    const model = new Model(process.env.MISTRAL_API_KEY);
     req.model = model;
     return next();
 }

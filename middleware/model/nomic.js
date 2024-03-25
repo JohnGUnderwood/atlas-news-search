@@ -20,7 +20,11 @@ class Model {
         try{
             const resp = await this.model.post(
                 "embedding/text",
-                {model:"nomic-embed-text-v1","texts":[string]}
+                {
+                    model:"nomic-embed-text-v1","texts":[string],
+                    task_type:"search_query",
+                    dimensionality:process.env.EMBEDDING_DIMENSIONS? process.env.EMBEDDING_DIMENSIONS:768
+                }
             );
             return resp.data.embeddings[0];
         }catch(error){
@@ -31,7 +35,7 @@ class Model {
 }
 
 async function middleware(req,res,next) {
-    const model = new Model(process.env.NOMICAPIKEY);
+    const model = new Model(process.env.NOMIC_API_KEY);
     req.model = model;
     return next();
 }
