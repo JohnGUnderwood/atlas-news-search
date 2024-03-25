@@ -16,3 +16,8 @@
     padding-top:5px;
     padding-left:15px
 }
+
+a.link svg {
+    width:18px;
+    height:18px;
+}

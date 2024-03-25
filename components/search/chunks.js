@@ -1,4 +1,4 @@
-import { Subtitle, Description, Label } from '@leafygreen-ui/typography';
+import { Subtitle, Description, Label, Link } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
 import Icon from '@leafygreen-ui/icon';
 import { useState, } from 'react';
@@ -16,9 +16,12 @@ export default function ChunksResult({r,schema}){
             <Label>{r.attribution}</Label>
             <div style={{display: 'flex',gap:'10px'}}>
                 <div>
-                    <Subtitle style={{paddingBottom:"5px"}}>
-                        {r.title}
-                    </Subtitle>
+                    <Link className={styles.link} target="_blank" href={r.link}>
+                        <Subtitle style={{paddingBottom:"5px"}}>
+                            {r.title}
+                        </Subtitle>
+                    </Link>
+                    <br></br>
                     <Label>Most Relevant Chunk: {r.chunks[0].chunk} - Score: {r.chunks[0].score.toFixed(5)}</Label>
                     <Description>
                         {r.chunks[0].content}
