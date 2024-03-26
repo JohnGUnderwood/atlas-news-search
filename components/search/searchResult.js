@@ -5,9 +5,24 @@ import { useState, } from 'react';
 import styles from './results.module.css';
 import Preview from './preview';
 
+const stripHtmlTags = (str) => {
+    if ((str===null) || (str===''))
+        return false;
+    else
+        str = str.toString();
+    return str.replace(/<[^>]*>/g, '');
+}
+
 function getHighlighting(highlightsField,fieldName){
     const highlightedStrings = highlightsField
         .filter(h => h.path == fieldName)
+        .map(h => {
+            h.texts.map(t => {
+                t.value=stripHtmlTags(t.value); // Remove html tags since we are going to use dangerouslySetInnerHTML
+                return t;
+            });
+            return h
+        }) 
         .map(h => {
             const highlighted = h.texts.map(t => {
                 if(t.type === "hit"){
@@ -20,15 +35,18 @@ function getHighlighting(highlightsField,fieldName){
             return {original:original,highlighted:highlighted};
         
         });
+    console.log(fieldName,highlightedStrings);
     return highlightedStrings;
 }
 
 function createHighlighting(highlightsField,fieldName,fieldValue) {
+    var value = stripHtmlTags(fieldValue);
     const highlightedStrings = getHighlighting(highlightsField,fieldName);
     highlightedStrings.forEach((v) => {
-        fieldValue = fieldValue.replace(v.original,v.highlighted);
+        value = value.replace(v.original,v.highlighted);
     });
-    return {__html: fieldValue};
+    console.log(fieldName,value)
+    return {__html: value};
 }
 
 
@@ -71,7 +89,7 @@ export default function SearchResult({r,schema,query}){
                     {showHighlights?
                         <Description>
                             {contentHighlighting.map((h,i) => (
-                                <p key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h.highlighted}}/>...</p>
+                                <div key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h.highlighted}}/>...</div>
                             ))}
                         </Description>
                         :
