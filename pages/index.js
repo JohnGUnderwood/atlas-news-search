@@ -37,6 +37,10 @@ export default function Home(){
       .then(resp => {
         setInstantResults(resp.data);
       })
+    }else if(query.terms == ''){
+      setInstantResults(null);
+      setResponse({});
+      setMeta({hits:0});
     }
   },[query.terms]);
 
@@ -101,6 +105,12 @@ export default function Home(){
     setQuery(prevQuery => ({...prevQuery, filters: copiedFilters}));
   }
 
+  const handleInstantClick = (term) => {
+    console.log("handleInstantClick",term)
+    setQuery(prevQuery => ({...prevQuery,terms:term}));
+    handleSearch();
+  }
+
   return (
     <>
     <Header/>
@@ -109,7 +119,8 @@ export default function Home(){
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
       instantResults={instantResults}
-      instantField={'title'}>
+      instantField={'title'}
+      instantClick={handleInstantClick}>
       <Select 
         label="Search Method"
         name="Methods"
@@ -122,7 +133,6 @@ export default function Home(){
         <Option value="rrf">Reciprocal Rank Fusion</Option>
       </Select>
     </SearchBanner>
-    {/* <Preview preview={preview} setPreview={setPreview}></Preview> */}
     {query.method == "fts"?
       <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
         <div style={{paddingTop:"35px"}}>

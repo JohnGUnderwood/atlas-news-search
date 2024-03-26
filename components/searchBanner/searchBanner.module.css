@@ -1,3 +1,11 @@
+.dropdown {
+    position: absolute;
+    top: 100%; /* Position it right below the SearchInput */
+    left: 0; /* Align it to the left edge of the parent container */
+    right: 0; /* Align it to the right edge of the parent container */
+    z-index: 1; /* Make it appear in front of the other components */
+}
+
 /* Mobile devices (default) */
 .container {
     display: flex;

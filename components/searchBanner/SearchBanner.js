@@ -2,12 +2,27 @@ import styles from './searchBanner.module.css';
 import { MongoDBLogoMark } from "@leafygreen-ui/logo";
 import {SearchInput, SearchResult} from '@leafygreen-ui/search-input';
 import Button from "@leafygreen-ui/button";
-import { H1, H3 } from '@leafygreen-ui/typography';
+import { H1, H3, Link } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 
-export default function SearchBanner({appName,query,handleQueryChange,handleSearch,instantResults = null,instantField = null,children=null}){
+export default function SearchBanner({appName,query,handleQueryChange,handleSearch,instantResults = null,instantField = null,instantClick=null,children=null}){
     const [isFocused, setIsFocused] = useState(false);
+
+    const blurTimeoutId = useRef(null);
+
+    const handleBlur = () => {
+        // Set a timeout for the onBlur event handler
+        blurTimeoutId.current = setTimeout(() => {
+            setIsFocused(false);
+        }, 200); // 200ms should be enough, but you can adjust this value as needed
+    };
+
+    const handleFocus = () => {
+        // Clear the timeout if the SearchInput is refocused before the timeout finishes
+        clearTimeout(blurTimeoutId.current);
+        setIsFocused(true);
+    };
 
     var childrenElements = [];
     if(Array.isArray(children)){
@@ -38,24 +53,20 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
                         value={query}
                         onChange={(e)=>{ e.preventDefault(); handleQueryChange(e); }}
                         onSubmit={(e)=>{ e.preventDefault(); setIsFocused(false); handleSearch(); }}
-                        onFocus={() => setIsFocused(true)}
-                        onBlur={() => setIsFocused(false)}
+                        onFocus={handleFocus}
+                        onBlur={handleBlur}
                         aria-label="search button"
                         style={{marginBottom:"20px"}}>
                     </SearchInput>
                     {
                         isFocused && instantResults?
-                        <Card style={{
-                            position: 'absolute',
-                            top: '100%', // Position it right below the SearchInput
-                            left: 0, // Align it to the left edge of the parent container
-                            right: 0, // Align it to the right edge of the parent container
-                            zIndex: 1, // Make it appear in front of the other components
-                          }}>
+                        <Card className={styles.dropdown}>
                             {instantResults?
                                 instantResults.results.map(r => {
                                     return (
-                                        <p key={r._id} >{r[instantField][r.lang]}</p>
+                                         <p key={r._id} onClick={() => {instantClick(r[instantField][r.lang])}}>
+                                            <Link key={`${r._id}_link`}>{r[instantField][r.lang]}</Link>
+                                        </p>
                                     );
                                 })
                                 :<></>
