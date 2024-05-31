@@ -11,7 +11,6 @@ async function getResults(collection,pipeline){
 }
 
 const router = createRouter();
-
 router.use(database);
 
 router.post(async (req, res) => {

@@ -34,17 +34,20 @@ router.post(async (req, res) => {
             index:"searchIndex",
             compound:{
                 must:[textOp],
-                filter:[]
+                filter:[
+                    // {
+                    //     equals:{
+                    //         value:req.headers.User,
+                    //         path:"user"
+                    //     }
+                    // }
+                ]
             },
             highlight:{
                 path:[
                     {wildcard:'summary.*'},
                     {wildcard:'content.*'}
                 ]
-            },
-            sort:{
-                unused:{"$meta":"searchScore"},
-                published:-1
             }
         }
       

@@ -1,21 +1,33 @@
 import axios from 'axios';
 import Header from '../components/head';
+import jwt from 'jsonwebtoken';
 import { Facets, Filters, SearchResult, ChunksResult }from '../components/search'
 import { useState, useEffect} from 'react';
 import Pagination from '@leafygreen-ui/pagination';
 import { Option, OptionGroup, Select, Size } from '@leafygreen-ui/select';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
+import { Body } from '@leafygreen-ui/typography';
 
-export default function Home(){
-  const [query, setQuery] = useState({terms:'',method:'fts',filters:{}});
-  const [page, setPage] = useState(1);
-  const [response, setResponse] = useState({});
-  const [meta, setMeta] = useState({hits:0});
-  const [loading, setLoading] = useState(null);
-  const [instantResults, setInstantResults] = useState(null);
-  const [preview, setPreview] = useState({id:'',show:false});
+const api = axios.create({
+  baseURL: 'api/',
+  // headers: {
+  //   'Authorization': `Bearer ${process.env.LOCALDEVJWTOVERRIDE ? process.env.LOCALDEVJWTOVERRIDE : context.req.headers['x-kanopy-internal-authorization']}`
+  // }
+});
 
+export default function Home(context){
+  const [state, setState] = useState({
+    query: {terms:'',method:'fts',filters:{}},
+    page: 1,
+    response: {},
+    meta: {hits:0},
+    loading: null,
+    instantResults: null,
+    preview: {id:'',show:false},
+    token: null,
+
+  });
   const schema = {
     descriptionField : "summary",
     contentField : "content",
@@ -26,88 +38,100 @@ export default function Home(){
   }
 
   useEffect(() => {
-    console.log("query.filters or query,method changed");
-    console.log("query.method",query.method);
-    handleSearch();
-  },[query.filters,query.method]);
+    const token = process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE ? process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE : context.req?.headers['x-kanopy-internal-authorization'];
+    var user = jwt.decode(token)['sub'];
+    // if(process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE){
+    //   const decodedToken = jwt.decode(process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE);
+    //   user = decodedToken['sub'];
+    // }else if(context.req?.headers['x-kanopy-internal-authorization']){
+    //   const decodedToken = jwt.decode(context.req.headers['x-kanopy-internal-authorization']);
+    //   user = decodedToken['sub'];
+    // }
+    // Add username from decoded token as header on all requests.
+    api.defaults.headers.put['User'] = user;
+    setState(prevState => ({...prevState, user: user}));
 
+  }, []);
+  
   useEffect(() => {
-    if(query.terms && query.terms != ''){
-      getTypeahead(query)
+    handleSearch();
+  },[state.query.filters,state.query.method]);
+  
+  useEffect(() => {
+    if(state.query.terms && state.query.terms != ''){
+      getTypeahead(state.query)
       .then(resp => {
-        setInstantResults(resp.data);
+        setState(prevState => ({...prevState, instantResults: resp.data}));
       })
-    }else if(query.terms == ''){
-      setInstantResults(null);
-      setResponse({});
-      setMeta({hits:0});
+    }else if(state.query.terms == ''){
+      setState(prevState => ({...prevState, instantResults: null, response: {}, meta: {hits:0}}));
     }
-  },[query.terms]);
+  },[state.query.terms]);
+  
+  const setPreview = (id) => {
+    setState(prevState => ({...prevState, preview: {id:id,show:!prevState.preview.show}}));
+  }
 
   const handleSearch = () => {
-    if(query && query.terms && query.terms != ""){
-      setLoading(true);
-      // getSearchResults({query:query,pageSize:pageSize,filters:filters})
-      getSearchResults(query)
+    if(state.query && state.query.terms && state.query.terms != ""){
+      setState(prevState => ({...prevState, loading: true}));
+      getSearchResults(state.query)
       .then(resp => {
-        setLoading(false);
-        setResponse(resp.data);
+        setState(prevState => ({...prevState, loading: false, response: resp.data}));
       })
       .catch(error => console.log(error));
-
-      // getMeta({query:query,filters:filters})
-      getMeta(query)
-      .then(resp => setMeta(resp.data))
+  
+      getMeta(state.query)
+      .then(resp => setState(prevState => ({...prevState, meta: resp.data})))
       .catch(error => console.log(error));
     }
   }
-
+  
   const handleQueryChange = (event) => {
-    setQuery(prevQuery => ({...prevQuery,terms:event.target.value}));
+    setState(prevState => ({...prevState, query: {...prevState.query, terms: event.target.value}}));
   };
-
+  
   const nextPage = () => {
-    setPage(page+1);
-    setLoading(true);
-    getSearchResults({...query,page:'next',token:response.results[response.results.length-1].paginationToken})
+    setState(prevState => ({...prevState, page: prevState.page + 1, loading: true}));
+    getSearchResults({...state.query,page:'next',token:state.response.results[state.response.results.length-1].paginationToken})
     .then(resp => {
-      setLoading(false);
-      setResponse(resp.data);
+      setState(prevState => ({...prevState, loading: false, response: resp.data}));
     })
     .catch(error => console.log(error));
   }
-
+  
   const prevPage = () => {
-    setPage(page-1);
-    setLoading(true);
-    getSearchResults({...query,query,page:'prev',token:response.results[0].paginationToken})
+    setState(prevState => ({...prevState, page: prevState.page - 1, loading: true}));
+    getSearchResults({
+      ...state.query,
+      page: 'prev',
+      token: state.response.results[0].paginationToken
+    })
     .then(resp => {
-      setLoading(false);
-      setResponse(resp.data);
+      setState(prevState => ({...prevState, loading: false, response: resp.data}));
     })
     .catch(error => console.log(error));
   }
-
+  
   const handleMethodChange = (m) => {
-    setResponse({});
-    setQuery(prevQuery => ({...prevQuery,method:m}));
+    setState(prevState => ({...prevState, response: {}, query: {...prevState.query, method: m}}));
   };
-
+  
   const handleAddFilter = (filter,val) => {
-    let copiedFilters = {...query.filters};
+    let copiedFilters = {...state.query.filters};
     copiedFilters[filter] = val;
-    setQuery(prevQuery => ({...prevQuery, filters: copiedFilters}));
+    setState(prevState => ({...prevState, query: {...prevState.query, filters: copiedFilters}}));
   };
-
+  
   const handleRemoveFilter = (field) => {
-    let copiedFilters = {...query.filters};
+    let copiedFilters = {...state.query.filters};
     delete copiedFilters[field]
-    setQuery(prevQuery => ({...prevQuery, filters: copiedFilters}));
+    setState(prevState => ({...prevState, query: {...prevState.query, filters: copiedFilters}}));
   }
-
+  
   const handleInstantClick = (term) => {
     console.log("handleInstantClick",term)
-    setQuery(prevQuery => ({...prevQuery,terms:term}));
+    setState(prevState => ({...prevState, query: {...prevState.query, terms: term}}));
     handleSearch();
   }
 
@@ -115,10 +139,10 @@ export default function Home(){
     <>
     <Header/>
     <SearchBanner appName="News Search"
-      query={query.terms}
+      query={state.query.terms}
       handleQueryChange={handleQueryChange}
       handleSearch={handleSearch}
-      instantResults={instantResults}
+      instantResults={state.instantResults}
       instantField={'title'}
       instantClick={handleInstantClick}>
       <Select 
@@ -132,40 +156,49 @@ export default function Home(){
         <Option value="vector">Vector</Option>
         <Option value="rrf">Reciprocal Rank Fusion</Option>
       </Select>
+      {
+        state.user? 
+          <Body style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
+            <p style={{margin:"0px"}}>User</p>
+            <p style={{margin:"0px"}}>{state.user}</p>
+          </Body>
+        : <></>
+      }
     </SearchBanner>
-    {query.method == "fts"?
+    {state.query.method == "fts"
+      ?
       <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
         <div style={{paddingTop:"35px"}}>
-        {meta?.facets
+        {state.meta?.facets
           ? 
-          <Facets facets={meta.facets} onFilterChange={handleAddFilter}/>
+          <Facets facets={state.meta.facets} onFilterChange={handleAddFilter}/>
           : <></>
         }
         </div>
         <div>
           {
-            loading
+            state.loading
             ?
             <Spinner variant="large" description="Loading…"/>
             :
-            meta.hits > 0
+            state.meta.hits > 0
               ?
               <div style={{maxWidth:"95%"}}>
-                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                <Pagination currentPage={page}
+                {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                <Pagination currentPage={state.page}
                   itemsPerPage={4}
                   itemsPerPageOptions={[4]}
-                  numTotalItems={meta.hits}
+                  numTotalItems={state.meta.hits}
                   onBackArrowClick={prevPage}
                   onForwardArrowClick={nextPage}
                 />
-                {response.results? response.results.map(r => (
-                  <SearchResult query={query.terms} key={r._id} r={r} schema={schema} setPreview={setPreview}></SearchResult>
+                {state.response.results? state.response.results.map(r => (
+                  <SearchResult query={state.query.terms} key={r._id} r={r} schema={schema} setPreview={setPreview}></SearchResult>
                 )):<></>}
-                <Pagination currentPage={page}
+                <Pagination currentPage={state.page}
                   itemsPerPage={4}
                   itemsPerPageOptions={[4]}
-                  numTotalItems={meta.hits}
+                  numTotalItems={state.meta.hits}
                   onBackArrowClick={prevPage}
                   onForwardArrowClick={nextPage}
                 />
@@ -176,30 +209,32 @@ export default function Home(){
           }
         </div>
       </div>
-    :query.method == "vector" || query.method == "rrf" ?
-      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-        <div style={{paddingTop:"35px"}}>
-        </div>
-        <div>
-          {
-            loading
-            ?
-            <Spinner variant="large" description="Loading…"/>
-            :
-            meta.hits > 0
-              ?
-              <div style={{maxWidth:"95%"}}>
-                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                {response.results? response.results.map(r => (
-                  <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
-                )):<></>}
-              </div>
-              :
-              <></>
-          }
-        </div>
-      </div> 
-    :<></>}
+      :
+        state.query.method == "vector" || state.query.method == "rrf" ?
+          <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+            <div style={{paddingTop:"35px"}}>
+            </div>
+            <div>
+              {
+                state.loading
+                ?
+                <Spinner variant="large" description="Loading…"/>
+                :
+                state.meta.hits > 0
+                  ?
+                  <div style={{maxWidth:"95%"}}>
+                    {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                    {state.response.results? state.response.results.map(r => (
+                      <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
+                    )):<></>}
+                  </div>
+                  :
+                  <></>
+              }
+            </div>
+          </div> 
+        :<></>
+    }
     </>
   )
 }
@@ -212,7 +247,7 @@ async function getSearchResults({method=method,terms=terms,page=null,token=null,
     pageToken:token
   }
   return new Promise((resolve) => {
-      axios.post(`api/search/${method}?${params}`,
+      api.post(`search/${method}?${params}`,
         body
       )
       .then(response => resolve(response))
@@ -229,7 +264,7 @@ async function getMeta({terms=terms,filters=null}={}) {
     filters:filters
   }
   return new Promise((resolve) => {
-      axios.post(`api/search/meta?${params}`,
+      api.post(`search/meta?${params}`,
         body
       )
       .then(response => resolve(response))
@@ -246,7 +281,7 @@ async function getTypeahead({terms=terms,filters=null}={}) {
     filters:filters
   }
   return new Promise((resolve) => {
-      axios.post(`api/typeahead?${params}`,
+      api.post(`typeahead?${params}`,
         body
       )
       .then(response => resolve(response))
