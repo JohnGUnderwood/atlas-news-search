@@ -10,7 +10,7 @@ import signal
 import sys
 import traceback
 import httpx
-from os import getenv
+from os import getenv,environ
 from dotenv import load_dotenv
 from time import sleep
 import atexit
@@ -336,32 +336,34 @@ class EntryParseException(Exception):
 class Embeddings():
     def __init__(self):
         self.provider = getenv("PROVIDER",default="azure_openai")
+        self.api_key = getenv("API_KEY",None)
         # Embedding services. Default to using Azure OpenAI.
         if self.provider == "openai":
             from openai import OpenAI
-            self.client = OpenAI(api_key=getenv("OPENAIAPIKEY"))
+            self.client = OpenAI(api_key=self.api_key)
             self.model = getenv("EMBEDDING_MODEL","text-embedding-ada-002")
             self.dimensions = getenv("EMBEDDING_DIMENSIONS",None)
         elif self.provider == "vectorservice":
             import requests
         elif self.provider == "mistral":
             from mistralai.client import MistralClient
-            self.client = MistralClient(api_key=getenv("MISTRAL_API_KEY"))
+            self.client = MistralClient(api_key=self.api_key)
             self.model = getenv("EMBEDDING_MODEL","mistral-embed")
         elif self.provider == "azure_openai":
             from openai import AzureOpenAI
-            self.client = AzureOpenAI(api_key=getenv("OPENAIAPIKEY"))
+            self.client = AzureOpenAI(api_key=self.api_key)
             self.model = getenv("OPENAIDEPLOYMENT")
         elif self.provider == "fireworks":
             from openai import OpenAI
             self.client = OpenAI(
-                api_key=getenv("FIREWORKS_API_KEY"),
+                api_key=self.api_key,
                 base_url="https://api.fireworks.ai/inference/v1"
             )
             self.model = getenv("EMBEDDING_MODEL","nomic-ai/nomic-embed-text-v1.5")
             self.dimensions = getenv("EMBEDDING_DIMENSIONS",768)
         elif self.provider == "nomic":
             from nomic import embed as nomic_embed
+            environ["NOMIC_API_KEY"] = self.api_key
             self.model = getenv("EMBEDDING_MODEL","nomic-embed-text-v1.5")
             self.dimensions = getenv("EMBEDDING_DIMENSIONS",768)
         else:

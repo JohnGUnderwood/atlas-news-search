@@ -8,12 +8,9 @@ First you will need to set your database connection string and optional database
 MDBCONNSTR -- Connection string for your Atlas Cluster
 MDB_DB -- MongoDB database to install to (defaults to 'news-demo')
 VECTOR_SERVICE_URL -- If you are using a self-hosted embedding service
-OPENAIAPIKEY -- OpenAI API Key
 OPENAIDEPLOYMENT -- Model deployment if using Azure OpenAI
-OPENAIENDPOIN -- Endpoint if using Azure OpenAI deployment
-MISTRAL_API_KEY - Mistral.ai embeddings
-FIREWORKS_API_KEY -- Fireworks.ai embeddings
-NOMIC_API_KEY -- Nomic Atlas embeddings
+OPENAIENDPOINT -- Endpoint if using Azure OpenAI deployment
+API_KEY - API key for embedding provider
 PROVIDER -- Embedding provider: openai | azure_openai | vectorservice | mistral | fireworks | nomic
 EMBEDDING_DIMENSIONS - Size of dimensions to use. Depends on the embedding provider and model.
 EMBEDDING_MODEL - name of an embedding model to use (if your provider supports this)
