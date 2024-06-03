@@ -5,12 +5,33 @@
 .github
 
 # Build dependencies
-node_modules
+__pycache__/
+**/node_modules/
+**/.next/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+backend/chrome*/
 
 # Environment (contains sensitive data)
 .env
+**/.env
+backend/.env
 
 # Files not required for production
 Dockerfile
 README.md
 screenshots
+install.sh
+runLocal.sh
+runDocker.sh
+buildAndPush.sh
+buildRunDockerLocal.sh
+install.sh
+backend/test.py
+backend/example.env
+backend/package.json
+backend/package-lock.json
+supervisord.pid

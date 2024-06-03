@@ -1,0 +1,49 @@
+.toggle {
+    float: right;
+    border-radius: 8px;
+}
+.toggle:hover {
+    background-color: #889397;
+    /* background-color: red; */
+    cursor: pointer;
+}
+
+.feedContainer {
+    margin-bottom: 10px;
+}
+
+.feedContainer > div {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.feedContainer button {
+    font-size: x-small;
+    max-height: 25px;
+    max-width: 85px;
+}
+
+.crawlContainer {
+    font-size: x-small;
+}
+
+.crawlContainer > div {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.crawlContainer button {
+    font-size: x-small;
+    max-height: 25px;
+    max-width: 85px;
+}
+
+p.cssSelector {
+    margin:0;
+}
+
+.buttonsContainer {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}

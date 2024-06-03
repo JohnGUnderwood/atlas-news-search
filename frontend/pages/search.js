@@ -10,10 +10,7 @@ import SearchBanner from '../components/searchBanner/SearchBanner';
 import { Body } from '@leafygreen-ui/typography';
 
 const api = axios.create({
-  baseURL: 'api/',
-  // headers: {
-  //   'Authorization': `Bearer ${process.env.LOCALDEVJWTOVERRIDE ? process.env.LOCALDEVJWTOVERRIDE : context.req.headers['x-kanopy-internal-authorization']}`
-  // }
+  baseURL: '/',
 });
 
 export default function Home(context){
@@ -33,21 +30,13 @@ export default function Home(context){
     contentField : "content",
     titleField : "title",
     imageField : "media_thumbnail",
-    vectorField : "plot_embedding",
+    vectorField : "embedding",
     facetField : "tags",
   }
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE ? process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE : context.req?.headers['x-kanopy-internal-authorization'];
     var user = jwt.decode(token)['sub'];
-    // if(process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE){
-    //   const decodedToken = jwt.decode(process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE);
-    //   user = decodedToken['sub'];
-    // }else if(context.req?.headers['x-kanopy-internal-authorization']){
-    //   const decodedToken = jwt.decode(context.req.headers['x-kanopy-internal-authorization']);
-    //   user = decodedToken['sub'];
-    // }
-    // Add username from decoded token as header on all requests.
     api.defaults.headers.put['User'] = user;
     setState(prevState => ({...prevState, user: user}));
 
@@ -135,6 +124,20 @@ export default function Home(context){
     handleSearch();
   }
 
+  const handleSliderChange = (value) => {
+    console.log("handleSliderChange",value);
+    value = parseFloat(value);
+    setQuery(prevQuery => ({
+      ...prevQuery,
+      scalar: {
+        ...prevQuery.scalar,
+        fts: parseFloat((1 - value).toFixed(1)),
+        vector: parseFloat(value.toFixed(1))
+      }
+  }));
+   
+  }
+
   return (
     <>
     <Header/>
@@ -154,7 +157,7 @@ export default function Home(context){
       >
         <Option value="fts">Fulltext search</Option>
         <Option value="vector">Vector</Option>
-        <Option value="rrf">Reciprocal Rank Fusion</Option>
+        <Option value="rsf">Relative Score Fusion</Option>
       </Select>
       {
         state.user? 
@@ -209,42 +212,43 @@ export default function Home(context){
           }
         </div>
       </div>
-      :
-        state.query.method == "vector" || state.query.method == "rrf" ?
-          <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-            <div style={{paddingTop:"35px"}}>
-            </div>
-            <div>
-              {
-                state.loading
-                ?
-                <Spinner variant="large" description="Loading…"/>
-                :
-                state.meta.hits > 0
-                  ?
-                  <div style={{maxWidth:"95%"}}>
-                    {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                    {state.response.results? state.response.results.map(r => (
-                      <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
-                    )):<></>}
-                  </div>
-                  :
-                  <></>
-              }
-            </div>
-          </div> 
-        :<></>
-    }
+    :query.method == "vector" || query.method == "rsf" ?
+      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
+        <div style={{paddingTop:"35px"}}>
+        </div>
+        <div>
+          {query.method === "rsf" ? <ScalarSlider query={query} handleSliderChange={handleSliderChange}/> : <></>}
+          {
+            loading
+            ?
+            <Spinner variant="large" description="Loading…"/>
+            :
+            meta.hits > 0
+              ?
+              <div style={{maxWidth:"95%"}}>
+                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                {response.results? response.results.map(r => (
+                  <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
+                )):<></>}
+              </div>
+              :
+              <></>
+          }
+        </div>
+      </div> 
+    :<></>}
     </>
   )
 }
 
-async function getSearchResults({method=method,terms=terms,page=null,token=null,pageSize=null,filters=null}={}) {
+async function getSearchResults({method=method,terms=terms,page=null,token=null,pageSize=null,filters=null,scalar=null}={}) {
   const params = `q=${terms}`
   const body = {
     filters:filters,
     page:page,
-    pageToken:token
+    pageToken:token,
+    fts_scalar:scalar.fts,
+    vector_scalar:scalar.vector
   }
   return new Promise((resolve) => {
       api.post(`search/${method}?${params}`,
