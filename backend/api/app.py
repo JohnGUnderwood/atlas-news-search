@@ -211,7 +211,7 @@ def searchFTS():
                     ]
                 },
                 "sort": {
-                    "unused": {"$meta": "searchScore"},
+                    "score": {"$meta": "searchScore"},
                     "published": -1
                 }
             }
@@ -279,11 +279,7 @@ def searchMeta():
                         {"wildcard": 'title.*'},
                         {"wildcard": 'summary.*'},
                         {"wildcard": 'content.*'}
-                    ],
-                    "fuzzy": {
-                        "maxEdits": 1,
-                        "maxExpansions": 10
-                    },
+                    ]
                 }
             }
 
@@ -292,12 +288,6 @@ def searchMeta():
                 "compound": {
                     "must": [text_op],
                     "filter": []
-                },
-                "highlight": {
-                    "path": [
-                        {"wildcard": 'summary.*'},
-                        {"wildcard": 'content.*'}
-                    ]
                 }
             }
 
@@ -364,11 +354,7 @@ def searchRSF():
             text_op = {
                 "text": {
                     "query": query,
-                    "path": [
-                        {"wildcard": 'title.*'},
-                        {"wildcard": 'summary.*'},
-                        {"wildcard": 'content.*'}
-                    ]
+                    "path": "content"
                 }
             }
 
@@ -379,14 +365,7 @@ def searchRSF():
                     "filter": []
                 },
                 "highlight": {
-                    "path": [
-                        {"wildcard": 'summary.*'},
-                        {"wildcard": 'content.*'}
-                    ]
-                },
-                "sort": {
-                    "unused": {"$meta": "searchScore"},
-                    "published": -1
+                    "path": "content"
                 }
             }
 
@@ -417,42 +396,21 @@ def searchRSF():
                     "$vectorSearch":vector_opts
                 },
                 {
-                    "$addFields": {"vs_score": {"$meta": "vectorSearchScore"}}
+                    "$addFields": {"vs_score": {"$multiply": [request.json.get('vector_scalar',0.5), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta":"vectorSearchScore"}]}}]}]}]}}
                 },
                 {
-                    "$project": {
-                        "title": '$title',
-                        "image": '$media_thumbnail',
-                        "description": '$summary',
-                        "highlights": {"$meta": "searchHighlights"},
-                        "score": {"$meta": "searchScore"},
-                        "paginationToken": {"$meta": "searchSequenceToken"},
-                        "lang": 1,
-                        "attribution": 1,
-                        "link": 1,
-                        "vs_score": {"$multiply": [request.args.get('vector_scalar', default = 0.5, type = float), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, "$vs_score"]}}]}]}]}
-                    }
+                    "$unset":"embedding"
                 },
                 {
                     "$unionWith": {
-                        "coll": "",
+                        "coll": "docs_chunks",
                         "pipeline": [
                             {
                                 "$search":search_opts
                             },
-                            {"$addFields": {"fts_score": {"$meta": "searchScore"}}},
+                            {"$addFields": {"fts_score": {"$multiply": [request.json.get('fts_scalar',0.5), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta": "searchScore"}]}}]}]}]}}},
                             {
-                                "$project": {
-                                    "title": '$title',
-                                    "image": '$media_thumbnail',
-                                    "description": '$summary',
-                                    "highlights": {"$meta": "searchHighlights"},
-                                    "paginationToken": {"$meta": 'searchSequenceToken'},
-                                    "lang": 1,
-                                    "attribution": 1,
-                                    "link": 1,
-                                    "fts_score": {"$multiply": [request.args.get('fts_scalar', default = 0.5, type = float), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, "$fts_score"]}}]}]}]}
-                                }
+                                "$unset":"embedding"
                             }
                         ],
                     }
@@ -463,39 +421,63 @@ def searchRSF():
                         "vs_score": {"$max": "$vs_score"},
                         "fts_score": {"$max": "$fts_score"},
                         "title": {"$first": "$title"},
-                        "image": {"$first": "$image"},
-                        "description": {"$first": "$description"},
+                        "chunk": {"$first": "$description"},
                         "lang": {"$first": "$lang"},
                         "attribution": {"$first": "$attribution"},
-                        "link": {"$first": "$link"}
-                    }
-                },
-                {
-                    "$project": {
-                        "_id": 1,
-                        "title": 1,
-                        "image": 1,
-                        "description": 1,
-                        "vs_score": {"$ifNull": ["$vs_score", 0]},
-                        "fts_score": {"$ifNull": ["$fts_score", 0]},
-                        "lang": 1,
-                        "attribution": 1,
-                        "link": 1
+                        "link": {"$first": "$link"},
+                        "content": {"$first": "$content"},
+                        "parent_id": {"$first": "$parent_id"},
                     }
                 },
                 {
                     "$addFields": {
                         "score": {
-                            "$add": ["$fts_score", "$vs_score"],
+                            "$add": [{"$ifNull": ["$fts_score", 0]}, {"$ifNull": ["$vs_score", 0]}],
                         },
                     }
                 },
-                {"$sort": {"score": -1}},
-                {"$limit": int(request.json.get('pageSize')) if request.json.get('pageSize') else 4}
+                {
+                    "$sort": {"score": -1}
+                },
+                {
+                    "$group": {
+                        "_id": "$parent_id",
+                        "chunks": { "$push": "$$ROOT" },
+                        "lang": { "$first": "$lang" },
+                        "title": { "$first": "$title" },
+                        "attribution": { "$first": "$attribution" },
+                        "link": { "$first": "$link" },
+                        "max": { "$max": "$score" },
+                        "avg": { "$avg": "$score" },
+                        "sum": { "$sum": "$score" },
+                        "count": { "$count": {} }
+                    }
+                },
+                {
+                    "$project":{
+                        "parent":"$_id",
+                        "chunks":1,
+                        "lang":1,
+                        "attribution":1,
+                        "link":1,
+                        "title":1,
+                        "score":{
+                            "avg":"$avg",
+                            "max":"$max",
+                            "sum":"$sum",
+                            "count":"$count"
+                            }
+                        }
+                },
+                {
+                    "$sort":{
+                        "score.max":-1
+                    }
+                }
             ]
 
             try:
-                response = get_results(db['docs'], pipeline)
+                response = get_results(db['docs_chunks'], pipeline)
                 return returnPrettyJson({"results": response, "query": pipeline})
             except Exception as error:
                 return returnPrettyJson({"error": str(error), "query": pipeline}), 405

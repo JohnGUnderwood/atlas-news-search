@@ -35,7 +35,6 @@ function getHighlighting(highlightsField,fieldName){
             return {original:original,highlighted:highlighted};
         
         });
-    console.log(fieldName,highlightedStrings);
     return highlightedStrings;
 }
 
@@ -45,7 +44,6 @@ function createHighlighting(highlightsField,fieldName,fieldValue) {
     highlightedStrings.forEach((v) => {
         value = value.replace(v.original,v.highlighted);
     });
-    console.log(fieldName,value)
     return {__html: value};
 }
 

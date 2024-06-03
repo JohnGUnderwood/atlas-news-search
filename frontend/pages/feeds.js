@@ -8,7 +8,7 @@ import axios from 'axios';
 import SearchBanner from "../components/searchBanner/SearchBanner";
 import Button from "@leafygreen-ui/button";
 
-export default function Home(){
+export default function FeedHome(){
   const [open, setOpen] = useState(false);
   const [feeds,setFeeds] = useState(null)
   const [query, setQuery] = useState('');
