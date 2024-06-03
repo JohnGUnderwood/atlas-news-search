@@ -1,3 +1,3 @@
 source .env
-npm run build
-npm start
+. venv/bin/activate && \
+supervisord -c supervisord.conf

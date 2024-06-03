@@ -20,6 +20,7 @@ OPENAI_KEY
     echo "Using args:"
     echo "\t${MDBCONNSTR}\n"
     echo "\t${MDB_DB}\n"
+    echo "\t${PROVIDER}\n"
     echo "\t${OPENAIAPIKEY}\n"
     echo 
     echo "Starting container"
@@ -30,6 +31,7 @@ OPENAI_KEY
     -e "MDBCONNSTR=${MDBCONNSTR}" \
     -e "MDB_DB=${MDB_DB}" \
     -e "OPENAIAPIKEY=${OPENAIAPIKEY}" \
+    -e "PROVIDER=${PROVIDER}" \
     --restart unless-stopped    newsearch:latest
     echo
     echo "+================================"

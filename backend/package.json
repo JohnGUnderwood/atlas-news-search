@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@puppeteer/browsers": "^2.1.0"
+  }
+}

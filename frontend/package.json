@@ -1,0 +1,33 @@
+{
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3020",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@leafygreen-ui/button": "^21.0.11",
+    "@leafygreen-ui/card": "^10.0.6",
+    "@leafygreen-ui/chip": "^1.0.0",
+    "@leafygreen-ui/code": "^14.3.3",
+    "@leafygreen-ui/expandable-card": "^3.0.23",
+    "@leafygreen-ui/icon": "^11.28.0",
+    "@leafygreen-ui/loading-indicator": "^2.0.8",
+    "@leafygreen-ui/logo": "^8.0.12",
+    "@leafygreen-ui/modal": "^16.0.7",
+    "@leafygreen-ui/pagination": "^1.0.19",
+    "@leafygreen-ui/search-input": "^2.1.2",
+    "@leafygreen-ui/select": "^11.1.2",
+    "@leafygreen-ui/tabs": "^11.1.13",
+    "@leafygreen-ui/text-input": "^13.1.0",
+    "@leafygreen-ui/toast": "^6.1.18",
+    "@leafygreen-ui/typography": "^18.0.1",
+    "axios": "^1.6.2",
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.3.0",
+    "next": "^14.2.3",
+    "react": "^18",
+    "react-dom": "^18"
+  }
+}
