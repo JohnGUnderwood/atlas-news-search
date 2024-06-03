@@ -1,3 +1,8 @@
+# source .env
+# cd frontend
+# npm run build
+# npm start
+
 source .env
-npm run build
-npm start
+. venv/bin/activate && \
+supervisord -c supervisord.conf
