@@ -1,29 +1,21 @@
-import axios from 'axios';
 import Header from '../components/head';
-import jwt from 'jsonwebtoken';
 import { Facets, Filters, SearchResult, ChunksResult }from '../components/search'
 import { useState, useEffect} from 'react';
 import Pagination from '@leafygreen-ui/pagination';
 import { Option, OptionGroup, Select, Size } from '@leafygreen-ui/select';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
-import { Body } from '@leafygreen-ui/typography';
+import { useApi } from '../components/useApi';
 
-const api = axios.create({
-  baseURL: '/',
-});
-
-export default function Home(context){
+export default function SearchPage(context){
   const [state, setState] = useState({
-    query: {terms:'',method:'fts',filters:{}},
+    query: {terms:'',method:'fts',filters:{},paginationToken: null},
     page: 1,
     response: {},
     meta: {hits:0},
     loading: null,
     instantResults: null,
     preview: {id:'',show:false},
-    token: null,
-
   });
   const schema = {
     descriptionField : "summary",
@@ -33,27 +25,31 @@ export default function Home(context){
     vectorField : "embedding",
     facetField : "tags",
   }
+  const api = useApi();
 
-  useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE ? process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE : context.req?.headers['x-kanopy-internal-authorization'];
-    var user = jwt.decode(token)['sub'];
-    api.defaults.headers.put['User'] = user;
-    setState(prevState => ({...prevState, user: user}));
-
-  }, []);
   
   useEffect(() => {
-    handleSearch();
-  },[state.query.filters,state.query.method]);
+    runSearch();
+  },[state.query.filters,state.query.method,state.query.page]);
   
   useEffect(() => {
     if(state.query.terms && state.query.terms != ''){
-      getTypeahead(state.query)
+      api.post(`typeahead?`,state.query,{q:state.query.terms})
       .then(resp => {
         setState(prevState => ({...prevState, instantResults: resp.data}));
       })
+      .catch(error => {
+        console.log(error);
+        setState(prevState => ({...prevState, loading: false, response: error.response.data}));
+      });
     }else if(state.query.terms == ''){
-      setState(prevState => ({...prevState, instantResults: null, response: {}, meta: {hits:0}}));
+      setState(prevState => ({
+        ...prevState,
+        page:1,
+        instantResults: null,
+        response: {},
+        meta: {hits:0}
+      }));
     }
   },[state.query.terms]);
   
@@ -61,18 +57,24 @@ export default function Home(context){
     setState(prevState => ({...prevState, preview: {id:id,show:!prevState.preview.show}}));
   }
 
-  const handleSearch = () => {
+  const runSearch = () => {
     if(state.query && state.query.terms && state.query.terms != ""){
       setState(prevState => ({...prevState, loading: true}));
-      getSearchResults(state.query)
+      api.post(`search/${state.query.method}?`,state.query,{q:state.query.terms})
       .then(resp => {
         setState(prevState => ({...prevState, loading: false, response: resp.data}));
       })
-      .catch(error => console.log(error));
-  
-      getMeta(state.query)
+      .catch(error => {
+        console.log(error);
+        setState(prevState => ({...prevState, loading: false, response: error.response.data}));
+      });
+      
+      api.post(`search/meta?`,state.query,{q:state.query.terms})
       .then(resp => setState(prevState => ({...prevState, meta: resp.data})))
-      .catch(error => console.log(error));
+      .catch(error => {
+        console.log(error);
+        setState(prevState => ({...prevState, loading: false, response: error.response.data}));
+      });
     }
   }
   
@@ -81,51 +83,92 @@ export default function Home(context){
   };
   
   const nextPage = () => {
-    setState(prevState => ({...prevState, page: prevState.page + 1, loading: true}));
-    getSearchResults({...state.query,page:'next',token:state.response.results[state.response.results.length-1].paginationToken})
-    .then(resp => {
-      setState(prevState => ({...prevState, loading: false, response: resp.data}));
-    })
-    .catch(error => console.log(error));
+    setState(prevState => ({
+      ...prevState,
+      page: prevState.page + 1,
+      loading: true,
+      query:{
+        ...prevState.query,
+        page:'next',
+        paginationToken:state.response.results[state.response.results.length-1].paginationToken
+      }
+    }));
   }
   
   const prevPage = () => {
-    setState(prevState => ({...prevState, page: prevState.page - 1, loading: true}));
-    getSearchResults({
-      ...state.query,
-      page: 'prev',
-      token: state.response.results[0].paginationToken
-    })
-    .then(resp => {
-      setState(prevState => ({...prevState, loading: false, response: resp.data}));
-    })
-    .catch(error => console.log(error));
+    setState(prevState => ({
+      ...prevState,
+      page: prevState.page - 1,
+      loading: true,
+      query:{
+        ...prevState.query,
+        page:'prev',
+        paginationToken:state.response.results[0].paginationToken
+      }
+    }));
   }
   
   const handleMethodChange = (m) => {
     setState(prevState => ({...prevState, response: {}, query: {...prevState.query, method: m}}));
   };
+
+  const handleSearchClick = () => {
+    setState(prevState => ({
+      ...prevState,
+      page:1,
+      query: {
+        ...prevState.query,
+        paginationToken: null,
+        page:null,
+        filters: {}
+      }
+    }));
+  }
   
   const handleAddFilter = (filter,val) => {
     let copiedFilters = {...state.query.filters};
     copiedFilters[filter] = val;
-    setState(prevState => ({...prevState, query: {...prevState.query, filters: copiedFilters}}));
+    setState(prevState => ({
+      ...prevState,
+      page:1,
+      query: {
+        ...prevState.query,
+        paginationToken: null,
+        page:null,
+        filters: copiedFilters
+      }
+    }));
   };
   
   const handleRemoveFilter = (field) => {
     let copiedFilters = {...state.query.filters};
     delete copiedFilters[field]
-    setState(prevState => ({...prevState, query: {...prevState.query, filters: copiedFilters}}));
+    setState(prevState => ({
+      ...prevState,
+      page:1,
+      query: {
+        ...prevState.query,
+        paginationToken: null,
+        page:null,
+        filters: copiedFilters
+      }
+    }));
   }
   
   const handleInstantClick = (term) => {
-    console.log("handleInstantClick",term)
-    setState(prevState => ({...prevState, query: {...prevState.query, terms: term}}));
-    handleSearch();
+    setState(prevState => ({
+      ...prevState,
+      query: {
+        ...prevState.query,
+        terms: term,
+        paginationToken: null,
+        page:null,
+        filters: {}
+      }
+    }));
   }
 
   const handleSliderChange = (value) => {
-    console.log("handleSliderChange",value);
     value = parseFloat(value);
     setQuery(prevQuery => ({
       ...prevQuery,
@@ -144,7 +187,7 @@ export default function Home(context){
     <SearchBanner appName="News Search"
       query={state.query.terms}
       handleQueryChange={handleQueryChange}
-      handleSearch={handleSearch}
+      handleSearch={handleSearchClick}
       instantResults={state.instantResults}
       instantField={'title'}
       instantClick={handleInstantClick}>
@@ -159,14 +202,6 @@ export default function Home(context){
         <Option value="vector">Vector</Option>
         <Option value="rsf">Relative Score Fusion</Option>
       </Select>
-      {
-        state.user? 
-          <Body style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
-            <p style={{margin:"0px"}}>User</p>
-            <p style={{margin:"0px"}}>{state.user}</p>
-          </Body>
-        : <></>
-      }
     </SearchBanner>
     {state.query.method == "fts"
       ?
@@ -239,59 +274,4 @@ export default function Home(context){
     :<></>}
     </>
   )
-}
-
-async function getSearchResults({method=method,terms=terms,page=null,token=null,pageSize=null,filters=null,scalar=null}={}) {
-  const params = `q=${terms}`
-  const body = {
-    filters:filters,
-    page:page,
-    pageToken:token,
-    fts_scalar:scalar.fts,
-    vector_scalar:scalar.vector
-  }
-  return new Promise((resolve) => {
-      api.post(`search/${method}?${params}`,
-        body
-      )
-      .then(response => resolve(response))
-      .catch((error) => {
-          console.log(error)
-          resolve(error.response.data);
-      })
-  });
-}
-
-async function getMeta({terms=terms,filters=null}={}) {
-  const params = `q=${terms}`
-  const body = {
-    filters:filters
-  }
-  return new Promise((resolve) => {
-      api.post(`search/meta?${params}`,
-        body
-      )
-      .then(response => resolve(response))
-      .catch((error) => {
-          console.log(error)
-          resolve(error.response.data);
-      })
-  });
-}
-
-async function getTypeahead({terms=terms,filters=null}={}) {
-  const params = `q=${terms}`
-  const body = {
-    filters:filters
-  }
-  return new Promise((resolve) => {
-      api.post(`typeahead?${params}`,
-        body
-      )
-      .then(response => resolve(response))
-      .catch((error) => {
-          console.log(error)
-          resolve(error.response.data);
-      })
-  });
 }

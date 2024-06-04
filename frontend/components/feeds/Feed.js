@@ -1,15 +1,16 @@
 
-import axios from 'axios';
 import Icon from '@leafygreen-ui/icon';
 import Card from '@leafygreen-ui/card';
 import { Subtitle, Label, Description, Overline, Link, H3} from "@leafygreen-ui/typography";
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useContext } from 'react';
 import Button from "@leafygreen-ui/button";
 import Modal from "@leafygreen-ui/modal";
 import { Spinner } from "@leafygreen-ui/loading-indicator";
 import Code from '@leafygreen-ui/code';
 import styles from "./feed.module.css";
 import { useRouter } from 'next/router';
+import { useApi } from "../useApi";
+import { UserContext } from '../auth/UserContext';
 
 export default function Feed({f,feeds,setFeeds}){
     const [testResult, setTestResult] = useState(null);
@@ -18,9 +19,9 @@ export default function Feed({f,feeds,setFeeds}){
     const [open, setOpen] = useState(false);
     const intervalId = useRef();
     const router = useRouter();
-
     const [showDetails, setShowDetails] = useState(false);
-
+    const api = useApi();
+    const { user, groups } = useContext(UserContext);
     const toggleDetails = () => {
         setShowDetails(!showDetails);
     }
@@ -29,20 +30,20 @@ export default function Feed({f,feeds,setFeeds}){
     useEffect(() => {
         if (feed.status && feed.status === 'starting' ) {
             intervalId.current = setInterval(() => {
-                fetchFeed(feed._id).then(response => {
-                    console.log('fetching feed');
+                api.get(`feed/${feed._id.$oid}`)
+                .then(response => {
                     setFeed(response.data);
                     // Update the feeds object in the parent component
-                    setFeeds({...feeds, [feed._id]: feed});
+                    setFeeds({...feeds, [feed._id.$oid]: feed});
                 });
             }, 3000);
         } else if (feed.status === 'stopping' || feed.status === 'running') {
             intervalId.current = setInterval(() => {
-                fetchFeed(feed._id).then(response => {
-                    console.log('fetching feed');
+                api.get(`feed/${feed._id.$oid}`)
+                .then(response => {
                     setFeed(response.data);
                     // Update the feeds object in the parent component
-                    setFeeds({...feeds, [feed._id]: feed});
+                    setFeeds({...feeds, [feed._id.$oid]: feed});
                 });
             }, 5000);
         } else {
@@ -50,41 +51,47 @@ export default function Feed({f,feeds,setFeeds}){
         }
 
         // Update the feeds object in the parent component
-        setFeeds({...feeds, [feed._id]: feed});
+        setFeeds({...feeds, [feed._id.$oid]: feed});
 
         // Clean up on unmount
         return () => clearInterval(intervalId.current);
     }, [feed]);
 
     const start = (id) => {
-        startCrawl(id).then(r => {
-            console.log(r);
+        api.get(`feed/${id}/start`)
+        .then(r => {
             setFeed(prevFeed => ({...prevFeed, status: r.data.status}))
         }).catch(e => console.log(e));
     };
 
     const stop = (id) => {
-        stopCrawl(id).then(r => {
-            console.log(r);
+        api.get(`feed/${id}/stop`)
+        .then(r => {
             setFeed(prevFeed => ({...prevFeed, status: r.data.status}))
         }).catch(e => console.log(e));
     };
 
     const clear = (id) => {
-        clearCrawlHistory(id).then(response => setFeed(response.data)).catch(e => console.log(e));
+        api.get(`feed/${id}/history/clear`).then(response => setFeed(response.data)).catch(e => console.log(e));
     };
 
     const test = (id) => {
         setTestLoading(true)
         setOpen(true);
-        fetchTestResult(id).then(response => {
+        api.get(`feed/${id}/test`)
+        .then(response => {
             setTestResult(response.data);
             setTestLoading(false);
-        }).catch(e => console.log(e));
+        }).catch(e => {
+            console.log(e);
+            setTestResult(e.response.data);
+            setTestLoading(false);
+        });
     };
 
     const remove = (id) => {
-        deleteFeed(id).then(response => {
+        api.del(`feed/${id}`)
+        .then(response => {
             const newFeeds = {...feeds};
             delete newFeeds[id];
             setFeeds(newFeeds);
@@ -94,7 +101,8 @@ export default function Feed({f,feeds,setFeeds}){
     return (
         <div>
         <Modal open={open} setOpen={setOpen}>
-            <Subtitle>Test RSS Feed {feed._id}</Subtitle>
+            <Subtitle>Test RSS Feed: {feed.name}</Subtitle>
+            <span style={{fontSize:"xs",fontWeight:"lighter"}}>{feed._id.$oid}</span>
             {
                 testLoading? <Spinner description="Getting test results..."/>
                 :testResult? <Code style={{whiteSpace:"break-spaces"}} language={'json'} copyable={false}>{JSON.stringify(testResult,null,2)}</Code>
@@ -103,15 +111,18 @@ export default function Feed({f,feeds,setFeeds}){
         </Modal>
         <Card>
             <div className={styles.feedContainer}>
-                <Link onClick={() => router.push(`/feed/${feed._id}`)}><H3>{feed.config.attribution}</H3></Link>
+                <Link onClick={() => router.push(`/feed/${feed._id.$oid}`)}>
+                    <H3>{feed.name}</H3>
+                    <span style={{fontSize:"xs",fontWeight:"lighter"}}>{feed._id.$oid}</span>
+                </Link>
                 <br></br>
                 <Label>{`${feed.status? feed.status : 'not run'}`}</Label>
                 <div>
                     <span style={{ fontWeight: "bold" }}>URL: </span><span><Link>{feed.config.url}</Link></span>
                 </div>
                 <div className={styles.buttonsContainer}>
-                    <Button onClick={() => test(feed._id)}>Test</Button>
-                    <Button variant="danger" onClick={() => remove(feed._id)}>Delete</Button>
+                    <Button onClick={() => test(feed._id.$oid)}>Test</Button>
+                    {user == feed.config.namespace ? <Button variant="danger" onClick={() => remove(feed._id.$oid)}>Delete</Button> : <></>}
                 </div>
             </div>
             <span><Label>Crawl Details</Label><Icon className={styles.toggle} onClick={toggleDetails} glyph={showDetails? "ChevronDown": "ChevronUp"} fill="None" /></span>
@@ -161,11 +172,11 @@ export default function Feed({f,feeds,setFeeds}){
                     
                 </div>
                 <div className={styles.buttonsContainer}>
-                    {feed.status == 'running'?<Button variant="danger" onClick={() => stop(feed._id)}>Stop</Button>
+                    {feed.status == 'running'?<Button variant="danger" onClick={() => stop(feed._id.$oid)}>Stop</Button>
                     :feed.status == 'starting'? <Button variant="primaryOutline">Start</Button>
                     :feed.status == 'stopping'? <Button variant="dangerOutline">Stop</Button>
-                    :<Button variant="primary" onClick={() => start(feed._id)}>Start</Button>}
-                    <Button variant="dangerOutline" onClick={() => clear(feed._id)}>Clear History</Button>
+                    :<Button variant="primary" onClick={() => start(feed._id.$oid)}>Start</Button>}
+                    <Button variant="dangerOutline" onClick={() => clear(feed._id.$oid)}>Clear History</Button>
                 </div>
             </div>
             :<></>}
@@ -194,68 +205,5 @@ function getElapsedTime(date1, date2) {
     }
 }
 
-async function fetchFeed(feedId) {
-    return new Promise((resolve) => {
-        axios.get(`/api/feed/${feedId}`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
 
-async function deleteFeed(feedId) {
-    return new Promise((resolve) => {
-        axios.delete(`/api/feed/${feedId}`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
 
-async function startCrawl(feedId) {
-    return new Promise((resolve) => {
-        axios.get(`/api/feed/${feedId}/start`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
-
-async function stopCrawl(feedId) {
-    return new Promise((resolve) => {
-        axios.get(`/api/feed/${feedId}/stop`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
-
-async function clearCrawlHistory(feedId) {
-    return new Promise((resolve) => {
-        axios.get(`/api/feed/${feedId}/history/clear`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
-
-async function fetchTestResult(feedId) {
-    return new Promise((resolve) => {
-        axios.get(`/api/feed/${feedId}/test`)
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS, cross_origin
 from bson.json_util import dumps
+from bson.objectid import ObjectId
 import json
 from packages import Entry,MyChromeDriver,MongoDBConnection,MyFeedParser,Embeddings
 import traceback
@@ -28,6 +29,7 @@ def test(config):
                 ATTRIBUTION=config['attribution'],
                 DRIVER=driver,
                 DATE_FORMAT=config['date_format'],
+                NAMESPACE=request.headers.get('User') or 'all',
                 CUSTOM_FIELDS=config.get('custom_fields',None)
             ).processEntry()
         except Exception as e:
@@ -47,7 +49,7 @@ app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'
 connection = MongoDBConnection()
-db = connection.connect()
+db = connection.get_database()
 driver = MyChromeDriver()
 embedder =  Embeddings()
 languages = ['en','es','fr']
@@ -62,8 +64,8 @@ def testConfig():
 @app.get("/feeds")
 def getFeeds():
     try:
-        feedList = list(db['feeds'].find({}))
-        feedDict = {feed['_id']: feed for feed in feedList}
+        feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User')}]}))
+        feedDict = {str(feed['_id']): feed for feed in feedList}
         return returnPrettyJson(feedDict), 200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -71,9 +73,10 @@ def getFeeds():
 @app.post("/feeds")
 def postFeed():
     try:
+        request.json['config']['namespace'] = request.headers.get('User') or 'all'
         db['feeds'].insert_one(request.json)
         feedList = list(db['feeds'].find({}))
-        feedDict = {feed['_id']: feed for feed in feedList}
+        feedDict = {str(feed['_id']): feed for feed in feedList}
         return returnPrettyJson(feedDict), 200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -85,15 +88,24 @@ def searchFeeds():
         feedList = list(db['feeds'].aggregate([
             {"$search":{
                 "compound":{
+                    "minimumShouldMatch":1,
                     "should":[
-                        {"autocomplete":{"query":query,"path":"_id"}},
+                        {"autocomplete":{"query":query,"path":"name"}},
                         {"autocomplete":{"query":query,"path":"config.attribution"}},
                         {"autocomplete":{"query":query,"path":"config.url"}}
+                    ],
+                    "filter":[
+                        {
+                            "in":{
+                                "path":"config.namespace",
+                                "value":[request.headers.get('User'),'all']
+                            }
+                        }
                     ]
                 }
             }}
         ]))
-        feedDict = {feed['_id']: feed for feed in feedList}
+        feedDict = {str(feed['_id']): feed for feed in feedList}
         return returnPrettyJson(feedDict), 200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -101,7 +113,7 @@ def searchFeeds():
 @app.get("/feed/<string:feedId>")
 def getFeed(feedId):
     try:
-        config = db['feeds'].find_one({'_id':feedId})
+        config = db['feeds'].find_one({'_id':ObjectId(feedId)})
         return returnPrettyJson(config), 200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -109,7 +121,7 @@ def getFeed(feedId):
 @app.delete("/feed/<string:feedId>")
 def deleteFeed(feedId):
     try:
-        config = db['feeds'].find_one_and_delete({'_id':feedId})
+        config = db['feeds'].find_one_and_delete({'_id':ObjectId(feedId)})
         return returnPrettyJson(config), 200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -126,8 +138,8 @@ def getFeedCrawlHistory(feedId):
 def deleteFeedCrawlHistory(feedId):
     try:
         db['logs'].delete_many({'feed_id':feedId})
-        db['feeds'].update_one({'_id':feedId},{"$unset":{'crawl':1}})
-        r = db['feeds'].find_one({'_id':feedId})
+        db['feeds'].update_one({'_id':ObjectId(feedId)},{"$unset":{'crawl':1}})
+        r = db['feeds'].find_one({'_id':ObjectId(feedId)})
         return returnPrettyJson(r),200
     except Exception as e:
         return returnPrettyJson(e),500
@@ -135,7 +147,7 @@ def deleteFeedCrawlHistory(feedId):
 @app.get("/feed/<string:feedId>/test")
 def testFeed(feedId):
     try:
-        f = db['feeds'].find_one({'_id':feedId},{'config':1})
+        f = db['feeds'].find_one({'_id':ObjectId(feedId)},{'config':1})
         return test(config=f['config'])
     except Exception as e:
         return returnPrettyJson(e),200
@@ -148,7 +160,7 @@ def queueCrawl(feedId):
         if q:
             return returnPrettyJson({'msg':'Feed {} already in queue to start'.format(feedId)}),200
         
-        f = db['feeds'].find_one({'_id':feedId},{'status':1,"crawl":1,'config':1})
+        f = db['feeds'].find_one({'_id':ObjectId(feedId)},{'status':1,"crawl":1,'config':1})
         if not 'status' in f or f['status'] == 'stopped' or f['status'] == 'finished':
             crawlConfig = f['config']
             r = db['queue'].insert_one({'action':'start','feed_id':feedId,'config':crawlConfig})
@@ -165,7 +177,7 @@ def queueStopCrawl(feedId):
         if q:
             return returnPrettyJson({'msg':'Feed {} already in queue to stop'.format(feedId)}),200
         
-        f = db['feeds'].find_one({'_id':feedId},{"pid":"$crawl.pid",'status':1})
+        f = db['feeds'].find_one({'_id':ObjectId(feedId)},{"pid":"$crawl.pid",'status':1})
         if 'status' in f:
             if f['status'] == 'running':
                 try:
@@ -184,7 +196,7 @@ def queueStopCrawl(feedId):
 def searchFTS():
     try:
         if 'q' not in request.args:
-            return jsonify({"error": "Request missing 'q' param"}), 400
+            return returnPrettyJson({"error": "Request missing 'q' param"}), 400
         else:
             query = request.args.get('q', default = "", type = str)
             text_op = {
@@ -202,7 +214,14 @@ def searchFTS():
                 "index": "searchIndex",
                 "compound": {
                     "must": [text_op],
-                    "filter": []
+                    "filter": [
+                        {
+                            "in":{
+                                "path":"namespace",
+                                "value":[request.headers.get('User'),'all']
+                            }
+                        }
+                    ]
                 },
                 "highlight": {
                     "path": [
@@ -216,10 +235,10 @@ def searchFTS():
                 }
             }
 
-            if request.json.get('page') == 'next' and request.json.get('pageToken'):
-                search_opts["searchAfter"] = request.json.get('pageToken')
-            elif request.json.get('page') == 'prev' and request.json.get('pageToken'):
-                search_opts["searchBefore"] = request.json.get('pageToken')
+            if request.json.get('page') == 'next' and request.json.get('paginationToken'):
+                search_opts["searchAfter"] = request.json.get('paginationToken')
+            elif request.json.get('page') == 'prev' and request.json.get('paginationToken'):
+                search_opts["searchBefore"] = request.json.get('paginationToken')
 
             if request.json.get('filters') and len(request.json.get('filters')) > 0:
                 for field, filter in request.json.get('filters').items():
@@ -256,7 +275,7 @@ def searchFTS():
 
             try:
                 response = get_results(db['docs'], pipeline)
-                if request.json.get('page') == 'prev' and request.json.get('pageToken'):
+                if request.json.get('page') == 'prev' and request.json.get('paginationToken'):
                     return returnPrettyJson({"results": list(reversed(response)), "query": pipeline})
                 else:
                     return returnPrettyJson({"results": response, "query": pipeline})
@@ -287,7 +306,14 @@ def searchMeta():
                 "index": "searchIndex",
                 "compound": {
                     "must": [text_op],
-                    "filter": []
+                    "filter": [
+                        {
+                            "in":{
+                                "path":"namespace",
+                                "value":[request.headers.get('User'),'all']
+                            }
+                        }
+                    ]
                 }
             }
 
@@ -348,9 +374,12 @@ def searchMeta():
 def searchRSF():
     try:
         if 'q' not in request.args:
-            return jsonify({"error": "Request missing 'q' param"}), 400
+            return returnPrettyJson({"error": "Request missing 'q' param"}), 400
         else:
             query = request.args.get('q', default = "", type = str)
+            scalar = request.json.get('scalar',{"vector":0.5,"fts":0.5})
+            vector_scalar = scalar.get('vector',0.5)
+            fts_scalar = scalar.get('fts',0.5)
             text_op = {
                 "text": {
                     "query": query,
@@ -362,7 +391,14 @@ def searchRSF():
                 "index": "searchIndex",
                 "compound": {
                     "must": [text_op],
-                    "filter": []
+                    "filter": [
+                        {
+                            "in":{
+                                "path":"namespace",
+                                "value":[request.headers.get('User'),'all']
+                            }
+                        }
+                    ]
                 },
                 "highlight": {
                     "path": "content"
@@ -374,11 +410,21 @@ def searchRSF():
                 "path":"embedding",
                 "queryVector": embedder.get_embedding(query),
                 "numCandidates":250,
-                "limit":50
+                "limit":50,
+                "filter":{
+                    "$and":[
+                        {
+                            "$or":[
+                                {"namespace":{"$eq":request.headers.get('User')}},
+                                {"namespace":{"$eq":'all'}}
+                            ]
+                        }
+                    ]
+                }
             }
 
             if 'filters' in request.json and len(request.json['filters']) > 0:
-                vector_opts['filter'] = {'$and': []}
+                vector_opts['filter']['$and'].append({"$or":[]})
                 for field, filter in request.json['filters'].items():
                     if filter['type'] == 'equals':
                         v_opt = {field: {'$eq': filter['val']}}
@@ -388,7 +434,7 @@ def searchRSF():
                                 'value': filter['val']
                             }
                         }
-                        vector_opts['filter']['$and'].append(v_opt)
+                        vector_opts['filter']['$and'][1]["$or"].append(v_opt)
                         search_opts['compound']['filter'].append(s_opt)
 
             pipeline = [
@@ -396,7 +442,7 @@ def searchRSF():
                     "$vectorSearch":vector_opts
                 },
                 {
-                    "$addFields": {"vs_score": {"$multiply": [request.json.get('vector_scalar',0.5), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta":"vectorSearchScore"}]}}]}]}]}}
+                    "$addFields": {"vs_score": {"$multiply": [vector_scalar, {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta":"vectorSearchScore"}]}}]}]}]}}
                 },
                 {
                     "$unset":"embedding"
@@ -408,7 +454,7 @@ def searchRSF():
                             {
                                 "$search":search_opts
                             },
-                            {"$addFields": {"fts_score": {"$multiply": [request.json.get('fts_scalar',0.5), {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta": "searchScore"}]}}]}]}]}}},
+                            {"$addFields": {"fts_score": {"$multiply": [fts_scalar, {"$divide": [1, {"$sum": [1, {"$exp": {"$multiply": [-1, {"$meta": "searchScore"}]}}]}]}]}}},
                             {
                                 "$unset":"embedding"
                             }
@@ -488,7 +534,7 @@ def searchRSF():
 def vectorSearch():
     try:
         if 'q' not in request.args:
-            return jsonify({"error": "Request missing 'q' param"}), 400
+            return returnPrettyJson({"error": "Request missing 'q' param"}), 400
         else:
             query = request.args.get('q', default = "", type = str)
 
@@ -497,14 +543,25 @@ def vectorSearch():
                 "path":"embedding",
                 "queryVector": embedder.get_embedding(query),
                 "numCandidates":250,
-                "limit":50
+                "limit":50,
+                "filter":{
+                    "$and":[
+                        {
+                            "$or":[
+                                {"namespace":{"$eq":request.headers.get('User')}},
+                                {"namespace":{"$eq":'all'}}
+                            ]
+                        }
+                    ]
+                }
             }
 
             if 'filters' in request.json and len(request.json['filters']) > 0:
+                vector_opts['filter']['$and'].append({"$or":[]})
                 for field, filter in request.json['filters'].items():
                     if filter['type'] == 'equals':
                         v_opt = {field: {'$eq': filter['val']}}
-                        vector_opts['filter']['$and'].append(v_opt)
+                        vector_opts['filter']['$and'][1]["$or"].append(v_opt)
 
             pipeline = [
                 {
@@ -611,7 +668,7 @@ def fetch():
 def typeahead():
     try:
         if 'q' not in request.args:
-            return jsonify({"error": "Request missing 'q' param"}), 400
+            return returnPrettyJson({"error": "Request missing 'q' param"}), 400
         else:
             query = request.args.get('q', default = "", type = str)
 
@@ -619,7 +676,14 @@ def typeahead():
                 "index": "searchIndex",
                 "compound": {
                     "should": [],
-                    "filter": []
+                    "filter": [
+                        {
+                            "in":{
+                                "path":"namespace",
+                                "value":[request.headers.get('User'),'all']
+                            }
+                        }
+                    ]
                 },
             }
 

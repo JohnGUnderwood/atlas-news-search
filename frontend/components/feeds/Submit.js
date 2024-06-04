@@ -5,23 +5,26 @@ import Button from "@leafygreen-ui/button";
 import Form from "./Form";
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import Code from '@leafygreen-ui/code';
+import { useApi } from "../useApi";
 
 export default function Submit({setFeeds,setOpen}){
     const [testResult, setTestResult] = useState(null);
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState(
         {
-            _id:'',
+            name: '',
             lang: '',
             url: '',
             attribution: '',
             content_html_selectors:[''],
             date_format: '%a, %d %b %Y %H:%M:%S %Z'
         });
+    const api = useApi();
+    api.setHeaders({'Content-Type' : 'application/json'});
 
     const handleSubmit = () => {
         const newFeed = {
-            '_id': formData._id,
+            'name': formData.name,
             'config': {
                 'lang': formData.lang,
                 'url': formData.url,
@@ -32,12 +35,15 @@ export default function Submit({setFeeds,setOpen}){
         };
         setLoading(true);
         // Submit the new feed data
-        submitFeed(newFeed).then(response => {
+
+        // submitFeed(newFeed)
+        api.post(`feeds`, newFeed)
+        .then(response => {
             setLoading(false);
             setOpen(false);
             setFeeds(response.data);
         })
-        .catch(e => console.log(e));
+        .catch(e => {console.log(e)});
     }
 
     const testFeed = () => {
@@ -46,15 +52,17 @@ export default function Submit({setFeeds,setOpen}){
         newFormData.content_html_selectors = newFormData.content_html_selectors.filter(selector => selector !== '');
         setFormData(newFormData);
         setLoading(true)
-        fetchTestResult(newFormData).then(response => {
+        // fetchTestResult(newFormData)
+        api.post(`test`, newFormData)
+        .then(response => {
             setTestResult(response.data);
             setLoading(false);
-        }).catch(e => console.log(e));
+        }).catch(e => {
+            console.log(e);
+            setTestResult(e.response.data);
+            setLoading(false);
+        });
     };
-
-    useEffect(() => {
-        console.log(formData);
-    }, [formData]);
 
     return (
         <div>
@@ -75,37 +83,4 @@ export default function Submit({setFeeds,setOpen}){
             }
         </div>
     );
-}
-
-async function fetchTestResult(feed) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-    return new Promise((resolve) => {
-        axios.post(`api/test`,
-            feed,
-            {headers: headers})
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
-}
-
-async function submitFeed(feed) {
-    const headers = {
-        'Content-Type': 'application/json'
-    }
-    return new Promise((resolve) => {
-        axios.post(`api/feeds`,
-            feed,
-            {headers: headers}
-        )
-        .then(response => resolve(response))
-        .catch((error) => {
-            console.log(error)
-            resolve(error.response.data);
-        })
-    });
 }

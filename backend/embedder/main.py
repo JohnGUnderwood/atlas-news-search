@@ -7,7 +7,7 @@ load_dotenv()
 
 # Set up your MongoDB connection and specify collection and inputs/outputs
 connection=MongoDBConnection()
-db=connection.connect()
+db=connection.get_database()
 collection = db.docs_chunks
 embedder=Embeddings()
 
