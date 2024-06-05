@@ -37,13 +37,22 @@ export default function Form({formData,setFormData}){
 
     return (
         <>
-        <div className={styles.formRow}>
-                <Label htmlFor="_id">ID:</Label>
+            <div className={styles.formRow}>
+                <Label htmlFor="name">Name:</Label>
                 <TextInput
                     className={styles.formInput}
-                    value={formData._id}
-                    type="text" id="_id" name="_id" required
-                    onChange={event => handleInputChange('_id',event)}/>
+                    value={formData.name}
+                    type="text" id="name" name="name" required
+                    onChange={event => handleInputChange('name',event)}/>
+                <div className={styles.spacer}></div>
+            </div>
+            <div className={styles.formRow}>
+                <Label htmlFor="attribution">Attribution:</Label>
+                <TextInput
+                    className={styles.formInput}
+                    value={formData.attribution}
+                    type="text" id="attribution" name="attribution" required
+                    onChange={event => handleInputChange('attribution',event)}/>
                 <div className={styles.spacer}></div>
             </div>
             <div className={styles.formRow}>
@@ -62,15 +71,6 @@ export default function Form({formData,setFormData}){
                     value={formData.url}
                     type="text" id="url" name="url" required
                     onChange={event => handleInputChange('url',event)}/>
-                <div className={styles.spacer}></div>
-            </div>
-            <div className={styles.formRow}>
-                <Label htmlFor="attribution">Attribution:</Label>
-                <TextInput
-                    className={styles.formInput}
-                    value={formData.attribution}
-                    type="text" id="attribution" name="attribution" required
-                    onChange={event => handleInputChange('attribution',event)}/>
                 <div className={styles.spacer}></div>
             </div>
             <div className={styles.formRow}>

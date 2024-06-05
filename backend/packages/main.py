@@ -18,12 +18,12 @@ import atexit
 load_dotenv()
 
 class Crawler:
-    def __init__(self,FEED_CONFIG,PID):
+    def __init__(self,FEED_CONFIG,PID,CONN):
         self.FEED_CONFIG=FEED_CONFIG
         self.PID=PID
         self.FEED_ID=FEED_CONFIG['_id']
-        self.CONN=MongoDBConnection()
-        self.MDB_DB=self.CONN.connect()
+        self.CONN=CONN
+        self.MDB_DB=CONN.get_database()
         self.DRIVER = MyChromeDriver()
         signal.signal(signal.SIGTERM, self.signal_handler)
 
@@ -36,7 +36,6 @@ class Crawler:
         )['crawl']
         crawl.update({'feed_id':self.FEED_CONFIG['_id']})
         self.MDB_DB.logs.insert_one(crawl)
-        self.CONN.close()
         self.DRIVER.quit()
         sys.exit(0)
 
@@ -78,6 +77,7 @@ class Crawler:
                 ATTRIBUTION=self.FEED_CONFIG['attribution'],
                 DRIVER=self.DRIVER,
                 DATE_FORMAT=self.FEED_CONFIG['date_format'],
+                NAMESPACE=self.FEED_CONFIG['namespace'],
                 CUSTOM_FIELDS=self.FEED_CONFIG.get('custom_fields',None)
                 ).processEntry()
             entry.update({'feed_id':self.FEED_ID})
@@ -108,6 +108,7 @@ class Crawler:
                         'attribution':entry['attribution'],
                         'link':entry['link'],
                         'title':entry['title'][entry['lang']],
+                        'namespace':[entry['namespace']]
                     }
                     if 'tags' in entry:
                         chunk.update({'tags':entry['tags']})
@@ -142,13 +143,14 @@ class Crawler:
         return
     
 class Entry:
-    def __init__(self,DATA,SELECTORS,LANG,ATTRIBUTION,DRIVER,DATE_FORMAT,CUSTOM_FIELDS):
+    def __init__(self,DATA,SELECTORS,LANG,ATTRIBUTION,DRIVER,DATE_FORMAT,NAMESPACE,CUSTOM_FIELDS):
         self.DATA=DATA
         self.SELECTORS=SELECTORS
         self.LANG=LANG
         self.ATTRIBUTION=ATTRIBUTION
         self.DRIVER=DRIVER
         self.DATE_FORMAT=DATE_FORMAT
+        self.NAMESPACE=NAMESPACE
         self.CUSTOM_FIELDS=CUSTOM_FIELDS
     
     def get(self):
@@ -246,6 +248,7 @@ class Entry:
             
             entry.update({'lang':lang})
             entry.update({'attribution':attribution})
+            entry.update({'namespace':self.NAMESPACE})
             self.DATA = entry
             return self.DATA
         except Exception as e:
@@ -273,20 +276,20 @@ class MongoDBConnection:
     def __init__(self):
         self.url = getenv("MDBCONNSTR")
         self.db_name = getenv("MDB_DB",default="news-demo")
-        atexit.register(self.close)
-    
-    def connect(self):
         try:
             self.client = pymongo.MongoClient(self.url)
             self.client.admin.command('ping')
             try:
                 self.db = self.client.get_database(self.db_name)
-                return self.db
             except Exception as e:
                 raise Exception("Failed to connect to {}. {}".format(self.db_name,e))
         except Exception as e:
             raise Exception("Failed to connect to MongoDB. {}".format(self.db_name,e))
+        atexit.register(self.close)
 
+    def get_database(self):
+        return self.db
+    
     def get_session(self):
         return self.client.start_session()
 

@@ -87,7 +87,7 @@ export default function SearchResult({r,schema,query}){
                     {showHighlights?
                         <Description>
                             {contentHighlighting.map((h,i) => (
-                                <div key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h.highlighted}}/>...</div>
+                                <span key={`${r._id}_content_highlight_p${i}`}>...<span key={`${r._id}_content_highlight_span${i}`} dangerouslySetInnerHTML={{__html:h.highlighted}}/>...</span>
                             ))}
                         </Description>
                         :

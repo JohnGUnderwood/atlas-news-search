@@ -14,7 +14,7 @@ feeds_search_index = {
         "mappings": {
             "dynamic": False,
             "fields": {
-                "_id": {
+                "name": {
                     "type": "autocomplete"
                 },
                 "config":{
@@ -28,6 +28,9 @@ feeds_search_index = {
                             "tokenization":"nGram",
                             "minGrams":3,
                             "maxGrams":20
+                        },
+                        "namespace":{
+                            "type":"token"
                         }
                     }
                 }
@@ -43,6 +46,9 @@ docs_search_index = {
             "dynamic": False,
             "fields": {
                 "_id":{
+                    "type":"token"
+                },
+                "namespace":{
                     "type":"token"
                 },
                 "published": [
@@ -199,6 +205,9 @@ docs_chunks_search_index = {
                     "type": "dateFacet"
                     }
                 ],
+                "namespace":{
+                    "type":"token"
+                },
                 "authors": [
                     {
                     "type": "string"
@@ -255,6 +264,10 @@ docs_chunks_vector_index = {
             {
                 "type":"filter",
                 "path":"published",
+            },
+            {
+                "type":"filter",
+                "path":"namespace",
             },
             {
                 "type":"filter",

@@ -7,20 +7,21 @@ from time import sleep
 from concurrent.futures import ProcessPoolExecutor
 import traceback
 from datetime import datetime
+from bson.objectid import ObjectId
 
 connection = MongoDBConnection()
-db = connection.connect()
+db = connection.get_database()
 
 def startProcess(config,feed_id):
     try:
         print('Parent process:', os.getppid())
         print('Process id:', os.getpid())
-        config.update({'_id':feed_id})
-        crawler=Crawler(FEED_CONFIG=config,PID=os.getpid())
+        config.update({'_id':ObjectId(feed_id)})
+        crawler=Crawler(FEED_CONFIG=config,PID=os.getpid(),CONN=connection)
         print("Running crawl: ",feed_id)
         crawler.start()
         crawl = db['feeds'].find_one_and_update(
-            {'_id':config['_id']},
+            {'_id':ObjectId(config['_id'])},
             {"$set":{'crawl.end':datetime.now(),'status':'finished'}},
             return_document=ReturnDocument.AFTER
         )['crawl']

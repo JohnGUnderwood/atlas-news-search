@@ -1,24 +1,30 @@
-import {H1, H3} from '@leafygreen-ui/typography';
-import { MongoDBLogoMark } from '@leafygreen-ui/logo';
-import Card from '@leafygreen-ui/card';
+import { useState } from 'react';
+import Sidebar from '../components/sidebar/sidebar';
+import SearchPage from './search';
+import Header from '../components/head';
+import { UserProvider } from '../components/auth/UserProvider';
+import FeedsPage
+ from './feeds';
+export async function getServerSideProps(context) {
+    let token = process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE ? process.env.NEXT_PUBLIC_LOCALDEVJWTOVERRIDE : context.req.headers['x-kanopy-internal-authorization'];
 
-export default function Home(){
+    if(!token){
+        token = null;
+    }
+    // Pass the token to your component as a prop
+    return { props: { token } };
+}
+
+
+export default function Home({token}){
+    const [nav, setNav] = useState("search");
     return (
-        <div>
-            <div style={{alignItems:"center"}}>
-                <H1 style={{textAlign:"center"}}><MongoDBLogoMark height={35}/>Atlas</H1>
-                <H3 style={{textAlign:"center"}}>Atlas News Demo</H3>
+        <UserProvider token={token}>
+            <Header/>
+            <div style={{display:"inline-flex",flexDirection:"row",justifyContent:"end"}}>
+            { nav == 'search' ? <SearchPage/> : <FeedsPage/> }
+            <Sidebar nav={nav} setNav={setNav} />
             </div>
-            <div style={{paddingTop:"15%",display:"flex",flexDirection:"row",gap:"5vw",justifyContent:"center",alignItems:"center"}}>
-                <Card href="/search" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <H3>Search UI</H3>
-                    <p>Search your indexed rss feeds!</p>
-                </Card>
-                <Card href="/feeds" style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <H3>RSS Feeds</H3>
-                    <p>Setup rss feeds for indexing!</p>
-                </Card>
-            </div>
-        </div>
+        </UserProvider>  
     );
 }
