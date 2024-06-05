@@ -14,8 +14,7 @@ export function UserProvider({ token, children }) {
     api.defaults.headers.common['User'] = user;
     api.defaults.headers.common['Groups'] = groups;
   }
-  console.log('Token:', token);
-console.log('Decoded:', decoded);
+  
   return (
     <UserContext.Provider value={{user,groups}}>
       <ApiContext.Provider value={api}>

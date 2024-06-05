@@ -339,7 +339,7 @@ class EntryParseException(Exception):
 class Embeddings():
     def __init__(self):
         self.provider = getenv("PROVIDER")
-        self.api_key = getenv("API_KEY",None)
+        self.api_key = getenv("EMBEDDING_API_KEY",None)
         # Embedding services. Default to using Azure OpenAI.
         if self.provider == "openai":
             from openai import OpenAI
@@ -355,7 +355,7 @@ class Embeddings():
         elif self.provider == "azure_openai":
             from openai import AzureOpenAI
             self.client = AzureOpenAI(
-                api_key=getenv("API_KEY"),
+                api_key=self.api_key,
                 api_version="2023-12-01-preview",
                 azure_endpoint=getenv("OPENAIENDPOINT")
             )
