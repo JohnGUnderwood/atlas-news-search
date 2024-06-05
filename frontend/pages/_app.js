@@ -1,12 +1,10 @@
 // pages/_app.js
 import React from 'react';
-import { UserProvider } from '../components/auth/UserProvider';
+import '../styles/globals.css'; // Import the global CSS file
 
-function MyApp({ Component, pageProps }) {
+function MyApp({ token, Component, pageProps }) {
   return (
-    <UserProvider>
       <Component {...pageProps} />
-    </UserProvider>
   );
 }
 

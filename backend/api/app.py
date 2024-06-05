@@ -29,7 +29,7 @@ def test(config):
                 ATTRIBUTION=config['attribution'],
                 DRIVER=driver,
                 DATE_FORMAT=config['date_format'],
-                NAMESPACE=request.headers.get('User') or 'all',
+                NAMESPACE=request.headers.get('User','all'),
                 CUSTOM_FIELDS=config.get('custom_fields',None)
             ).processEntry()
         except Exception as e:
@@ -64,7 +64,7 @@ def testConfig():
 @app.get("/feeds")
 def getFeeds():
     try:
-        feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User')}]}))
+        feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User','')}]}))
         feedDict = {str(feed['_id']): feed for feed in feedList}
         return returnPrettyJson(feedDict), 200
     except Exception as e:
@@ -73,7 +73,7 @@ def getFeeds():
 @app.post("/feeds")
 def postFeed():
     try:
-        request.json['config']['namespace'] = request.headers.get('User') or 'all'
+        request.json['config']['namespace'] = request.headers.get('User','all')
         db['feeds'].insert_one(request.json)
         feedList = list(db['feeds'].find({}))
         feedDict = {str(feed['_id']): feed for feed in feedList}
@@ -98,7 +98,7 @@ def searchFeeds():
                         {
                             "in":{
                                 "path":"config.namespace",
-                                "value":[request.headers.get('User'),'all']
+                                "value":[request.headers.get('User',''),'all']
                             }
                         }
                     ]
@@ -218,7 +218,7 @@ def searchFTS():
                         {
                             "in":{
                                 "path":"namespace",
-                                "value":[request.headers.get('User'),'all']
+                                "value":[request.headers.get('User',''),'all']
                             }
                         }
                     ]
@@ -310,7 +310,7 @@ def searchMeta():
                         {
                             "in":{
                                 "path":"namespace",
-                                "value":[request.headers.get('User'),'all']
+                                "value":[request.headers.get('User',''),'all']
                             }
                         }
                     ]
@@ -395,7 +395,7 @@ def searchRSF():
                         {
                             "in":{
                                 "path":"namespace",
-                                "value":[request.headers.get('User'),'all']
+                                "value":[request.headers.get('User',''),'all']
                             }
                         }
                     ]
@@ -415,7 +415,7 @@ def searchRSF():
                     "$and":[
                         {
                             "$or":[
-                                {"namespace":{"$eq":request.headers.get('User')}},
+                                {"namespace":{"$eq":request.headers.get('User','')}},
                                 {"namespace":{"$eq":'all'}}
                             ]
                         }
@@ -548,7 +548,7 @@ def vectorSearch():
                     "$and":[
                         {
                             "$or":[
-                                {"namespace":{"$eq":request.headers.get('User')}},
+                                {"namespace":{"$eq":request.headers.get('User','')}},
                                 {"namespace":{"$eq":'all'}}
                             ]
                         }
@@ -680,7 +680,7 @@ def typeahead():
                         {
                             "in":{
                                 "path":"namespace",
-                                "value":[request.headers.get('User'),'all']
+                                "value":[request.headers.get('User',''),'all']
                             }
                         }
                     ]

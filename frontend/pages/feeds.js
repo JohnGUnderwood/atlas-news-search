@@ -45,20 +45,16 @@ export default function FeedsPage(){
   useEffect(() => {fetchFeeds()}, []);
 
   return (
-    <>
-    <Head>
-        <title>RSS Crawler</title>
-        <link rel="icon" href="/favicon.ico" />
-    </Head>
-    <SearchBanner appName="RSS Crawler" query={query} handleQueryChange={handleQueryChange} handleSearch={handleSearch}/>
-    <Modal open={open} setOpen={setOpen}>
-      <Subtitle>Add Feed</Subtitle>
-      <Submit setFeeds={setFeeds} setOpen={setOpen}/>
-    </Modal>
-    <div style={{paddingTop:"50px"}}>
-      <Button style={{marginLeft:"30px"}} onClick={()=>setOpen(true)}>Add Feed</Button>
-      <Feeds feeds={feeds} setFeeds={setFeeds}/>
+    <div style={{width:"90vw"}}>
+      <SearchBanner appName="News Demo" query={query} handleQueryChange={handleQueryChange} handleSearch={handleSearch}/>
+      <Modal open={open} setOpen={setOpen}>
+        <Subtitle>Add Feed</Subtitle>
+        <Submit setFeeds={setFeeds} setOpen={setOpen}/>
+      </Modal>
+      <div style={{paddingTop:"50px"}}>
+        <Button style={{marginLeft:"30px"}} onClick={()=>setOpen(true)}>Add Feed</Button>
+        <Feeds feeds={feeds} setFeeds={setFeeds}/>
+      </div>
     </div>
-    </>
   );
 };

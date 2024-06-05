@@ -108,6 +108,7 @@ class Crawler:
                         'attribution':entry['attribution'],
                         'link':entry['link'],
                         'title':entry['title'][entry['lang']],
+                        'namespace':[entry['namespace']]
                     }
                     if 'tags' in entry:
                         chunk.update({'tags':entry['tags']})

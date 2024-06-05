@@ -20,13 +20,13 @@ export default function Feed({f,feeds,setFeeds}){
     const intervalId = useRef();
     const router = useRouter();
     const [showDetails, setShowDetails] = useState(false);
+    const [deleteModal, setDeleteModal] = useState(false);
     const api = useApi();
-    const { user, groups } = useContext(UserContext);
     const toggleDetails = () => {
         setShowDetails(!showDetails);
     }
-
-
+    const { user, groups } = useContext(UserContext);
+    
     useEffect(() => {
         if (feed.status && feed.status === 'starting' ) {
             intervalId.current = setInterval(() => {
@@ -122,7 +122,13 @@ export default function Feed({f,feeds,setFeeds}){
                 </div>
                 <div className={styles.buttonsContainer}>
                     <Button onClick={() => test(feed._id.$oid)}>Test</Button>
-                    {user == feed.config.namespace ? <Button variant="danger" onClick={() => remove(feed._id.$oid)}>Delete</Button> : <></>}
+                    {user == feed.config.namespace || groups.includes('10gen-saspecialist') ? <Button variant="danger" onClick={() => setDeleteModal(true)}>Delete</Button> : <></>}
+                    <Modal open={deleteModal} setOpen={setDeleteModal}>
+                        <Subtitle>Are you sure you want to delete this feed?</Subtitle>
+                        <H3 style={{marginTop:"5px"}}>{feed.name}</H3>
+                        <Button style={{marginRight:"15px",marginTop:"15px"}} variant="danger" onClick={() => remove(feed._id.$oid)}>Delete</Button>
+                        <Button variant="primary" onClick={() => setDeleteModal(false)}>Cancel</Button>
+                    </Modal>
                 </div>
             </div>
             <span><Label>Crawl Details</Label><Icon className={styles.toggle} onClick={toggleDetails} glyph={showDetails? "ChevronDown": "ChevronUp"} fill="None" /></span>

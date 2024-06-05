@@ -6,10 +6,12 @@ import { Option, OptionGroup, Select, Size } from '@leafygreen-ui/select';
 import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
 import { useApi } from '../components/useApi';
+import ScalarSlider from '../components/scalarSlider';
+import Sidebar from '../components/sidebar/sidebar';
 
 export default function SearchPage(context){
   const [state, setState] = useState({
-    query: {terms:'',method:'fts',filters:{},paginationToken: null},
+    query: {terms:'',method:'fts',filters:{},paginationToken: null,scalar:{fts:0.5,vector:0.5}},
     page: 1,
     response: {},
     meta: {hits:0},
@@ -30,7 +32,7 @@ export default function SearchPage(context){
   
   useEffect(() => {
     runSearch();
-  },[state.query.filters,state.query.method,state.query.page]);
+  },[state.query.filters,state.query.method,state.query.page,state.query.scalar]);
   
   useEffect(() => {
     if(state.query.terms && state.query.terms != ''){
@@ -170,108 +172,119 @@ export default function SearchPage(context){
 
   const handleSliderChange = (value) => {
     value = parseFloat(value);
-    setQuery(prevQuery => ({
-      ...prevQuery,
-      scalar: {
-        ...prevQuery.scalar,
-        fts: parseFloat((1 - value).toFixed(1)),
-        vector: parseFloat(value.toFixed(1))
+    setState(prevState => ({
+      ...prevState,
+      query: {
+        ...prevState.query,
+        scalar: {
+          ...prevState.query.scalar,
+          fts: parseFloat((1 - value).toFixed(1)),
+          vector: parseFloat(value.toFixed(1))
+        }
       }
   }));
    
   }
 
   return (
-    <>
-    <Header/>
-    <SearchBanner appName="News Search"
-      query={state.query.terms}
-      handleQueryChange={handleQueryChange}
-      handleSearch={handleSearchClick}
-      instantResults={state.instantResults}
-      instantField={'title'}
-      instantClick={handleInstantClick}>
-      <Select 
-        label="Search Method"
-        name="Methods"
-        size="xsmall"
-        defaultValue="fts"
-        onChange={handleMethodChange}
-      >
-        <Option value="fts">Fulltext search</Option>
-        <Option value="vector">Vector</Option>
-        <Option value="rsf">Relative Score Fusion</Option>
-      </Select>
-    </SearchBanner>
-    {state.query.method == "fts"
-      ?
-      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-        <div style={{paddingTop:"35px"}}>
-        {state.meta?.facets
-          ? 
-          <Facets facets={state.meta.facets} onFilterChange={handleAddFilter}/>
-          : <></>
+    // <>
+    // <Header/>
+    // <div style={{display:"inline-flex",flexDirection:"row",justifyContent:"end"}}>
+      <div style={{width:"90vw"}}>
+        <SearchBanner appName="News Demo"
+          query={state.query.terms}
+          handleQueryChange={handleQueryChange}
+          handleSearch={handleSearchClick}
+          instantResults={state.instantResults}
+          instantField={'title'}
+          instantClick={handleInstantClick}>
+          <Select 
+            label="Search Method"
+            name="Methods"
+            size="xsmall"
+            defaultValue="fts"
+            onChange={handleMethodChange}
+          >
+            <Option value="fts">Fulltext</Option>
+            <Option value="vector">Vector</Option>
+            <Option value="rsf">Hybrid</Option>
+          </Select>
+        </SearchBanner>
+        {
+          state.query.method == "fts"?
+            <div style={{display:"grid",gridTemplateColumns:"15% 85%",gap:"0px",alignItems:"start"}}>
+              <div style={{paddingTop:"35px"}}>
+              {state.meta?.facets
+                ? 
+                <Facets facets={state.meta.facets} onFilterChange={handleAddFilter}/>
+                : <></>
+              }
+              </div>
+              <div>
+                {
+                  state.loading
+                  ?
+                  <Spinner variant="large" description="Loading…"/>
+                  :
+                  state.meta.hits > 0
+                    ?
+                    <div style={{maxWidth:"95%"}}>
+                      {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                      <Pagination currentPage={state.page}
+                        itemsPerPage={4}
+                        itemsPerPageOptions={[4]}
+                        numTotalItems={state.meta.hits}
+                        onBackArrowClick={prevPage}
+                        onForwardArrowClick={nextPage}
+                      />
+                      {state.response.results? state.response.results.map(r => (
+                        <SearchResult query={state.query.terms} key={r._id} r={r} schema={schema} setPreview={setPreview}></SearchResult>
+                      )):<></>}
+                      <Pagination currentPage={state.page}
+                        itemsPerPage={4}
+                        itemsPerPageOptions={[4]}
+                        numTotalItems={state.meta.hits}
+                        onBackArrowClick={prevPage}
+                        onForwardArrowClick={nextPage}
+                      />
+                    </div>
+                    :
+                    <></>
+                  
+                }
+              </div>
+            </div>
+          :state.query.method == "vector" || state.query.method == "rsf" ?
+            <div style={{display:"grid",gridTemplateColumns:"10% 80% 10%",gap:"0px",alignItems:"start"}}>
+              <div style={{paddingTop:"35px"}}>
+              </div>
+              <div>
+                {state.query.method === "rsf" ? <ScalarSlider query={state.query} handleSliderChange={handleSliderChange}/> : <></>}
+                {
+                  state.loading
+                  ?
+                  <Spinner variant="large" description="Loading…"/>
+                  :
+                  state.meta.hits > 0
+                    ?
+                    <div style={{maxWidth:"95%"}}>
+                      {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
+                      {state.response.results? state.response.results.map(r => (
+                        <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
+                      )):<></>}
+                    </div>
+                    :
+                    <></>
+                }
+              </div>
+              <div style={{paddingTop:"35px"}}>
+              </div>
+            </div> 
+          :<></>  
         }
-        </div>
-        <div>
-          {
-            state.loading
-            ?
-            <Spinner variant="large" description="Loading…"/>
-            :
-            state.meta.hits > 0
-              ?
-              <div style={{maxWidth:"95%"}}>
-                {state.query.filters? Object.keys(state.query.filters).length > 0 ? <Filters filters={state.query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                <Pagination currentPage={state.page}
-                  itemsPerPage={4}
-                  itemsPerPageOptions={[4]}
-                  numTotalItems={state.meta.hits}
-                  onBackArrowClick={prevPage}
-                  onForwardArrowClick={nextPage}
-                />
-                {state.response.results? state.response.results.map(r => (
-                  <SearchResult query={state.query.terms} key={r._id} r={r} schema={schema} setPreview={setPreview}></SearchResult>
-                )):<></>}
-                <Pagination currentPage={state.page}
-                  itemsPerPage={4}
-                  itemsPerPageOptions={[4]}
-                  numTotalItems={state.meta.hits}
-                  onBackArrowClick={prevPage}
-                  onForwardArrowClick={nextPage}
-                />
-              </div>
-              :
-              <></>
-            
-          }
-        </div>
       </div>
-    :query.method == "vector" || query.method == "rsf" ?
-      <div style={{display:"grid",gridTemplateColumns:"20% 80%",gap:"0px",alignItems:"start"}}>
-        <div style={{paddingTop:"35px"}}>
-        </div>
-        <div>
-          {query.method === "rsf" ? <ScalarSlider query={query} handleSliderChange={handleSliderChange}/> : <></>}
-          {
-            loading
-            ?
-            <Spinner variant="large" description="Loading…"/>
-            :
-            meta.hits > 0
-              ?
-              <div style={{maxWidth:"95%"}}>
-                {query.filters? Object.keys(query.filters).length > 0 ? <Filters filters={query.filters} handleRemoveFilter={handleRemoveFilter}/> :<></>:<></>}
-                {response.results? response.results.map(r => (
-                  <ChunksResult key={r._id} r={r} schema={schema}></ChunksResult>
-                )):<></>}
-              </div>
-              :
-              <></>
-          }
-        </div>
-      </div> 
-    :<></>}
-    </>
+      //<Sidebar />
+    //</div>
+    //</>
   )
 }

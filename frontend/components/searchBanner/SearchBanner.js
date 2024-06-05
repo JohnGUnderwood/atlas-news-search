@@ -2,15 +2,13 @@ import styles from './searchBanner.module.css';
 import { MongoDBLogoMark } from "@leafygreen-ui/logo";
 import {SearchInput} from '@leafygreen-ui/search-input';
 import Button from "@leafygreen-ui/button";
-import { H1, H3, Link, Body } from '@leafygreen-ui/typography';
+import { H1, H3, Link, Body, Description } from '@leafygreen-ui/typography';
 import Card from '@leafygreen-ui/card';
-import { useState, useRef, useContext } from 'react';
-import { UserContext } from '../auth/UserContext';
+import { useState, useRef } from 'react';
 import { Children } from 'react';
 
 export default function SearchBanner({appName,query,handleQueryChange,handleSearch,instantResults = null,instantField = null,instantClick=null,children=null}){
     const [isFocused, setIsFocused] = useState(false);
-    const { user, groups } = useContext(UserContext);
     const blurTimeoutId = useRef(null);
 
     const handleBlur = () => {
@@ -27,16 +25,6 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
     };
 
     let childrenArray = Children.toArray(children);
-
-    if(user){
-        const userBody = (
-            <Body key="userBody" style={{display: "flex", flexDirection: "column", alignItems: "center"}}>
-                <span key="userLabel" style={{margin:"0px"}}>User</span>
-                <span key="userValue" style={{margin:"0px"}}>{user}</span>
-            </Body>
-        );
-        childrenArray = [...childrenArray, userBody];
-    }
 
     const childrenElements = childrenArray.map((child, index) => (
         <div key={index} style={{width:"15%", paddingLeft:"10px", marginBottom:"20px"}}>
