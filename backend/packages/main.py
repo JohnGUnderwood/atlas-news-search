@@ -338,7 +338,7 @@ class EntryParseException(Exception):
     
 class Embeddings():
     def __init__(self):
-        self.provider = getenv("PROVIDER",default="azure_openai")
+        self.provider = getenv("PROVIDER")
         self.api_key = getenv("API_KEY",None)
         # Embedding services. Default to using Azure OpenAI.
         if self.provider == "openai":
@@ -354,7 +354,11 @@ class Embeddings():
             self.model = getenv("EMBEDDING_MODEL","mistral-embed")
         elif self.provider == "azure_openai":
             from openai import AzureOpenAI
-            self.client = AzureOpenAI(api_key=self.api_key)
+            self.client = AzureOpenAI(
+                api_key=getenv("API_KEY"),
+                api_version="2023-12-01-preview",
+                azure_endpoint=getenv("OPENAIENDPOINT")
+            )
             self.model = getenv("OPENAIDEPLOYMENT")
         elif self.provider == "fireworks":
             from openai import OpenAI
@@ -370,7 +374,7 @@ class Embeddings():
             self.model = getenv("EMBEDDING_MODEL","nomic-embed-text-v1.5")
             self.dimensions = getenv("EMBEDDING_DIMENSIONS",768)
         else:
-            print("No valid provider specified. Defaulting to Azure OpenAI.")
+            print("No valid provider specified. Defaulting to Azure OpenAI and OPENAIAPIKEY variable.")
             self.provider = "azure_openai"
             from openai import AzureOpenAI
             self.client = AzureOpenAI(
@@ -378,6 +382,7 @@ class Embeddings():
                 api_version="2023-12-01-preview",
                 azure_endpoint=getenv("OPENAIENDPOINT")
             )
+            self.model = getenv("OPENAIDEPLOYMENT")
         print("Using provider: ",self.provider)
         print("Using model: ",self.model)
         print("Using dimensions: ",self.dimensions) 
