@@ -345,13 +345,14 @@ class Embeddings():
             from openai import OpenAI
             self.client = OpenAI(api_key=self.api_key)
             self.model = getenv("EMBEDDING_MODEL","text-embedding-ada-002")
-            self.dimensions = getenv("EMBEDDING_DIMENSIONS",None)
+            self.dimensions = getenv("EMBEDDING_DIMENSIONS",1536)
         elif self.provider == "vectorservice":
             import requests
         elif self.provider == "mistral":
             from mistralai.client import MistralClient
             self.client = MistralClient(api_key=self.api_key)
             self.model = getenv("EMBEDDING_MODEL","mistral-embed")
+            self.dimensions = getenv("EMBEDDING_DIMENSIONS",1024)
         elif self.provider == "azure_openai":
             from openai import AzureOpenAI
             self.client = AzureOpenAI(
@@ -360,6 +361,7 @@ class Embeddings():
                 azure_endpoint=getenv("OPENAIENDPOINT")
             )
             self.model = getenv("OPENAIDEPLOYMENT")
+            self.dimensions = getenv("EMBEDDING_DIMENSIONS",1536)
         elif self.provider == "fireworks":
             from openai import OpenAI
             self.client = OpenAI(
@@ -383,6 +385,7 @@ class Embeddings():
                 azure_endpoint=getenv("OPENAIENDPOINT")
             )
             self.model = getenv("OPENAIDEPLOYMENT")
+            self.dimensions = getenv("EMBEDDING_DIMENSIONS",1536)
         print("Using provider: ",self.provider)
         print("Using model: ",self.model)
         print("Using dimensions: ",self.dimensions) 
