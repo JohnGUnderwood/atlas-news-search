@@ -19,7 +19,7 @@ if [ $EXITCODE -eq 0 ]
     echo "\t${MDBCONNSTR}\n"
     echo "\t${MDB_DB}\n"
     echo "\t${PROVIDER}\n"
-    echo "\t${API_KEY}\n"
+    echo "\t${EMBEDDING_API_KEY}\n"
     echo 
     echo "Starting container"
     echo
@@ -28,8 +28,8 @@ if [ $EXITCODE -eq 0 ]
     docker run -t -i -d -p 3000:3000 -p 3010:3010 --name newssearch \
     -e "MDBCONNSTR=${MDBCONNSTR}" \
     -e "MDB_DB=${MDB_DB}" \
-    -e "API_KEY=${API_KEY}" \
     -e "PROVIDER=${PROVIDER}" \
+    -e "EMBEDDING_API_KEY=${EMBEDDING_API_KEY}" \
     --restart unless-stopped    newssearch:latest
     echo
     echo "+================================"

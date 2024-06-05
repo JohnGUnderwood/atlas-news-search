@@ -3,13 +3,14 @@ import jwt from 'jsonwebtoken';
 import axios from 'axios';
 
 export function UserProvider({ token, children }) {
+  const API_URL = process.env.API_URL || 'http://localhost:3010';
   const api = axios.create({
-    baseURL: 'api/',
+    baseURL: `${API_URL}/`,
   });
 
   const decoded = token ? jwt.decode(token) : null;
   const user = decoded?.sub || null;
-  const groups = decoded?.groups || null;
+  const groups = decoded?.groups || [];
   if(user && groups){
     api.defaults.headers.common['User'] = user;
     api.defaults.headers.common['Groups'] = groups;
