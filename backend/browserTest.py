@@ -5,7 +5,7 @@ try:
     html = driver.fetchPage("https://www.google.com")
     page_length = len(html)
     connection=MongoDBConnection()
-    db=connection.connect()
+    db=connection.get_database()
     try:
         assert page_length > 0
     except AssertionError as e:

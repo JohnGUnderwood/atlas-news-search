@@ -2,7 +2,7 @@ from feeds import feeds
 from packages import MongoDBConnection
 
 connection=MongoDBConnection()
-db=connection.connect()
+db=connection.get_database()
 
 installed = list(db["feeds"].find())
 if len(installed) < 1:

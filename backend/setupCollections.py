@@ -6,7 +6,7 @@ from os import getenv
 load_dotenv()
 
 connection=MongoDBConnection()
-db=connection.connect()
+db=connection.get_database()
 
 feeds_search_index = {
     "name":"default",
