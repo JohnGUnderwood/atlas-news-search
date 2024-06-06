@@ -14,13 +14,13 @@ export async function getServerSideProps(context) {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3010';
 
     // Pass the token to your component as a prop
-    return { props: { apiUrl, token } };
+    return { props: { token } };
 }
 
 export default function Home({apiUrl,token}){
     const [nav, setNav] = useState("search");
     return (
-        <UserProvider apiUrl={apiUrl} token={token}>
+        <UserProvider token={token}>
             <Header/>
             <div style={{display:"inline-flex",flexDirection:"row",justifyContent:"end"}}>
             { nav == 'search' ? <SearchPage/> : <FeedsPage/> }
