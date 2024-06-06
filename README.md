@@ -14,7 +14,10 @@ EMEBDDING_API_KEY - API key for embedding provider
 PROVIDER -- Embedding provider: openai | azure_openai | vectorservice | mistral | fireworks | nomic
 EMBEDDING_DIMENSIONS - Size of dimensions to use. Depends on the embedding provider and model.
 EMBEDDING_MODEL - name of an embedding model to use (if your provider supports this)
-NEXT_PUBLIC_API_URL -- Specify base url for backend APIs, useful for kubernetes deployments. Defaults to 'http://127.0.0.1:3010'
+```
+Optional:
+```
+API_URL -- Specify base url for backend APIs, useful for kubernetes deployments. Defaults to 'http://127.0.0.1:3010' if not set.
 ```
 
 After that you can either install everything to a local environment or use docker.

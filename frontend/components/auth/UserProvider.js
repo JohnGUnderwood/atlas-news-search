@@ -2,10 +2,10 @@ import { UserContext, ApiContext } from './UserContext';
 import jwt from 'jsonwebtoken';
 import axios from 'axios';
 
-export function UserProvider({ apiUrl, token, children }) {
+export function UserProvider({ token, children }) {
 
   const api = axios.create({
-    baseURL: `${apiUrl}/`,
+    baseURL: '/api/',
   });
 
   const decoded = token ? jwt.decode(token) : null;
