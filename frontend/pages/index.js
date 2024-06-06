@@ -11,13 +11,11 @@ export async function getServerSideProps(context) {
         token = null;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:3010';
-
     // Pass the token to your component as a prop
     return { props: { token } };
 }
 
-export default function Home({apiUrl,token}){
+export default function Home({token}){
     const [nav, setNav] = useState("search");
     return (
         <UserProvider token={token}>
