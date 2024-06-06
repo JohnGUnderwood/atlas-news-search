@@ -148,7 +148,7 @@ export default function Feed({f,feeds,setFeeds}){
                 </div>
                 <div>
                     <div>
-                        <span style={{ fontWeight: "bold" }}>Last Crawled: </span><span>{feed.crawl ? `${getElapsedTime(new Date(feed.crawl.start?.$date), new Date())} ago` : 'Never'}</span>
+                        <span style={{ fontWeight: "bold" }}>Last Crawled: </span><span>{feed.crawl ? `${getElapsedTime(new Date(feed.crawl.start?.$date), Date.now())} ago` : 'Never'}</span>
                     
                     
                         {

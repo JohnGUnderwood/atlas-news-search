@@ -1,5 +1,5 @@
 import feedparser
-from datetime import datetime
+from datetime import datetime,timezone 
 import pymongo
 from pymongo import ReturnDocument
 from bs4 import BeautifulSoup
@@ -31,7 +31,7 @@ class Crawler:
         print('Crawler for {} stopping with status {}'.format(self.FEED_ID,status))
         crawl = self.MDB_DB.feeds.find_one_and_update(
             {'_id':self.FEED_CONFIG['_id']},
-            {"$set":{'crawl.end':datetime.now(),'status':status}},
+            {"$set":{'crawl.end':datetime.now(timezone.utc),'status':status}},
             return_document=ReturnDocument.AFTER
         )['crawl']
         crawl.update({'feed_id':self.FEED_CONFIG['_id']})
@@ -122,7 +122,7 @@ class Crawler:
         
     def start(self):
         config = self.FEED_CONFIG
-        crawl = {'pid':self.PID,'start':datetime.now(),'crawled':[],'inserted':[],'errors':[],'duplicates':[]}
+        crawl = {'pid':self.PID,'start':datetime.now(timezone.utc),'crawled':[],'inserted':[],'errors':[],'duplicates':[]}
         self.updateFeed({"$set":{'crawl':crawl,'status':'running'}})
         try:
             feed = MyFeedParser(config['url']).parseFeed()
@@ -222,14 +222,14 @@ class Entry:
                 except TypeError:
                     entry.update({'summary':{lang:entry.summary}})
                     
-            if 'title' in entry: entry.update({'title':{lang:entry.title}})
+            if 'title' in entry: entry.update({'title':{lang:entry.title,'autocomplete':entry.title}})
             if 'published' in entry:
                 published_date = ''
                 try:
                     published_date = datetime.strptime(entry.published,self.DATE_FORMAT)
                 except ValueError as e:
                     print("Failed to parse date {} with format {}. Using current date instead".format(entry.published,self.DATE_FORMAT))
-                    published_date = datetime.now()
+                    published_date = datetime.now(timezone.utc)
                 entry.update({'published':published_date})
             if 'tags' in entry:
                 tagList = []

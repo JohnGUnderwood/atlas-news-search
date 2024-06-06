@@ -675,7 +675,14 @@ def typeahead():
             search_opts = {
                 "index": "searchIndex",
                 "compound": {
-                    "should": [],
+                    "must": [
+                        {
+                            "autocomplete": {
+                                "query": query,
+                                "path": f"title.autocomplete"
+                            }
+                        }
+                    ],
                     "filter": [
                         {
                             "in":{
@@ -686,16 +693,6 @@ def typeahead():
                     ]
                 },
             }
-
-            for lang in languages:
-                search_opts["compound"]["should"].append(
-                    {
-                        "autocomplete": {
-                            "query": query,
-                            "path": f"title.{lang}"
-                        }
-                    }
-                )
 
             if request.json.get('filters') and len(request.json.get('filters')) > 0:
                 for field, filter in request.json.get('filters').items():
@@ -712,11 +709,10 @@ def typeahead():
                 {
                     "$search": search_opts
                 },
-                {"$limit": int(request.json.get('pageSize')) if request.json.get('pageSize') else 4},
+                {"$limit": 4},
                 {
                     "$project": {
-                        "title": 1,
-                        "lang": 1
+                        "title": "$title.autocomplete",
                     }
                 }
             ]

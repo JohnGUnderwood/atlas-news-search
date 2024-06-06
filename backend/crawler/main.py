@@ -6,7 +6,7 @@ from pymongo import ReturnDocument
 from time import sleep
 from concurrent.futures import ProcessPoolExecutor
 import traceback
-from datetime import datetime
+from datetime import datetime,timezone
 from bson.objectid import ObjectId
 
 connection = MongoDBConnection()
@@ -22,7 +22,7 @@ def startProcess(config,feed_id):
         crawler.start()
         crawl = db['feeds'].find_one_and_update(
             {'_id':ObjectId(config['_id'])},
-            {"$set":{'crawl.end':datetime.now(),'status':'finished'}},
+            {"$set":{'crawl.end':datetime.now(timezone.utc),'status':'finished'}},
             return_document=ReturnDocument.AFTER
         )['crawl']
         crawl.update({'feed_id':config['_id']})

@@ -58,8 +58,8 @@ export default function SearchBanner({appName,query,handleQueryChange,handleSear
                             {instantResults?
                                 instantResults.results.map(r => {
                                     return (
-                                         <p key={r._id} onClick={() => {instantClick(r[instantField][r.lang])}}>
-                                            <Link key={`${r._id}_link`}>{r[instantField][r.lang]}</Link>
+                                         <p key={r._id} onClick={() => {instantClick(r[instantField])}}>
+                                            <Link key={`${r._id}_link`}>{r[instantField]}</Link>
                                         </p>
                                     );
                                 })

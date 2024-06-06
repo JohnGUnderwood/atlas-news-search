@@ -1,5 +1,6 @@
 from packages import MongoDBConnection
 from pymongo.errors import CollectionInvalid,OperationFailure
+from pymongo.operations import SearchIndexModel
 from dotenv import load_dotenv
 from os import getenv
 
@@ -8,9 +9,9 @@ load_dotenv()
 connection=MongoDBConnection()
 db=connection.get_database()
 
-feeds_search_index = {
-    "name":"default",
-    "definition":{
+feeds_search_index = SearchIndexModel(
+    name="default",
+    definition={
         "mappings": {
             "dynamic": False,
             "fields": {
@@ -37,17 +38,14 @@ feeds_search_index = {
             }
         }
     }
-}
+)
 
-docs_search_index = {
-    "name":"searchIndex",
-    "definition":{
+docs_search_index = SearchIndexModel(
+    name="searchIndex",
+    definition={
         "mappings": {
             "dynamic": False,
             "fields": {
-                "_id":{
-                    "type":"token"
-                },
                 "namespace":{
                     "type":"token"
                 },
@@ -100,100 +98,85 @@ docs_search_index = {
                     "type": "stringFacet"
                     }
                 ],
-                "nasdaq_tickers": [
-                    {
-                    "type": "string"
-                    },
-                    {
-                    "type": "token"
-                    },
-                    {
-                    "type": "stringFacet"
-                    }
-                ],
                 "summary": {
                     "type": "document",
                     "fields": {
-                    "en": {
-                        "type": "string",
-                        "analyzer": "lucene.english",
-                        "searchAnalyzer": "lucene.english"
-                    },
-                    "es": {
-                        "type": "string",
-                        "analyzer": "lucene.spanish",
-                        "searchAnalyzer": "lucene.spanish"
-                    },
-                    "fr": {
-                        "type": "string",
-                        "analyzer": "lucene.french",
-                        "searchAnalyzer": "lucene.french"
-                    }
+                        "en": {
+                            "type": "string",
+                            "analyzer": "lucene.english",
+                            "searchAnalyzer": "lucene.english"
+                        },
+                        "es": {
+                            "type": "string",
+                            "analyzer": "lucene.spanish",
+                            "searchAnalyzer": "lucene.spanish"
+                        },
+                        "fr": {
+                            "type": "string",
+                            "analyzer": "lucene.french",
+                            "searchAnalyzer": "lucene.french"
+                        }
                     }
                 },
                 "content": {
                     "type": "document",
                     "fields": {
-                    "en": {
-                        "type": "string",
-                        "analyzer": "lucene.english",
-                        "searchAnalyzer": "lucene.english"
-                    },
-                    "es": {
-                        "type": "string",
-                        "analyzer": "lucene.spanish",
-                        "searchAnalyzer": "lucene.spanish"
-                    },
-                    "fr": {
-                        "type": "string",
-                        "analyzer": "lucene.french",
-                        "searchAnalyzer": "lucene.french"
-                    }
+                        "en": {
+                            "type": "string",
+                            "analyzer": "lucene.english",
+                            "searchAnalyzer": "lucene.english"
+                        },
+                        "es": {
+                            "type": "string",
+                            "analyzer": "lucene.spanish",
+                            "searchAnalyzer": "lucene.spanish"
+                        },
+                        "fr": {
+                            "type": "string",
+                            "analyzer": "lucene.french",
+                            "searchAnalyzer": "lucene.french"
+                        }
                     }
                 },
                 "title": {
                     "type": "document",
                     "fields": {
-                    "en": [
-                        {
-                        "type": "string",
-                        "analyzer": "lucene.english",
-                        "searchAnalyzer": "lucene.english"
-                        },
-                        {
-                        "type": "autocomplete"
-                        }
-                    ],
-                    "es": [
-                        {
-                        "type": "string",
-                        "analyzer": "lucene.spanish",
-                        "searchAnalyzer": "lucene.spanish"
-                        },
-                        {
-                        "type": "autocomplete"
-                        }
-                    ],
-                    "fr": [
-                        {
-                        "type": "string",
-                        "analyzer": "lucene.french",
-                        "searchAnalyzer": "lucene.french"
-                        },
-                        {
-                        "type": "autocomplete"
-                        }
-                    ]
+                        "autocomplete":[
+                            {
+                                "type": "autocomplete"
+                            }
+                        ],
+                        "en": [
+                            {
+                                "type": "string",
+                                "analyzer": "lucene.english",
+                                "searchAnalyzer": "lucene.english"
+                            }
+                        ],
+                        "es": [
+                            {
+                                "type": "string",
+                                "analyzer": "lucene.spanish",
+                                "searchAnalyzer": "lucene.spanish"
+                            }
+                        ],
+                        "fr": [
+                            {
+                                "type": "string",
+                                "analyzer": "lucene.french",
+                                "searchAnalyzer": "lucene.french"
+                            }
+                        ]
                     }
                 }
             }
         }
         }
-}
+)
 
-docs_chunks_search_index = {
-    "name":"searchIndex",
-    "definition":{
+docs_chunks_search_index = SearchIndexModel(
+    name="searchIndex",
+    definition={
         "mappings": {
             "dynamic": False,
             "fields": {
@@ -248,12 +231,12 @@ docs_chunks_search_index = {
             }
         }
         }
-}
+)
 
-docs_chunks_vector_index = {
-    "name":"vectorIndex",
-    "type":"vectorSearch",
-    "definition":{
+docs_chunks_vector_index = SearchIndexModel(
+    name="vectorIndex",
+    type="vectorSearch",
+    definition={
         "fields":[
             {
                 "type": "vector",
@@ -284,46 +267,37 @@ docs_chunks_vector_index = {
             }
         ]
     }
-}
+)
 
 collections = [
-    {'n':"queue",'m':None},
-    {'n':"logs",'m':None},
-    {'n':"feeds",'m':feeds_search_index},
-    {'n':"docs",'m':docs_search_index},
-    {'n':'docs_chunks','m':docs_chunks_search_index,'v':docs_chunks_vector_index}]
+    {'name':"queue",'indexes':None},
+    {'name':"logs",'indexes':None},
+    {'name':"feeds",'indexes':[feeds_search_index]},
+    {'name':"docs",'indexes':[docs_search_index]},
+    {'name':'docs_chunks','indexes':[docs_chunks_search_index,docs_chunks_vector_index]}]
 
 print("Creating collections and indexes on database: ",db.name)
 for c in collections:
     try:
-        db.create_collection(c['n'],check_exists=True)
+        db.create_collection(c['name'],check_exists=True)
     except CollectionInvalid as e:
-        print("The {} collection already exists:".format(c['n']), e)
+        print("The {} collection already exists:".format(c['name']), e)
         pass
 
 for c in collections:
-    if c['m'] is None:
+    if c['indexes'] is None:
         continue
     else:
-        print("Creating search index {} for {}".format(c['m']['name'],c['n']))
-        try:
-            db.get_collection(c['n']).create_search_index(model=c['m'])
-        except OperationFailure as e:
-            if 'codeName' in e.details and e.details['codeName'] == 'IndexAlreadyExists':
-                print("\tIndex already exists")
-                pass
-            else:
-                print("\tError creating index:", e)
-                raise e
-        if 'v' in c:
-            print("Creating vector index {} for {}".format(c['v']['name'],c['n']))
+        print("Creating search indexes for {}".format(c['name']))
+        for index in c['indexes']:
+            print("\tCreating index {}".format(index.document.get('name')))
             try:
-                db.command("createSearchIndexes",c['n'],indexes=[c['v']])
+                db.get_collection(c['name']).create_search_index(model=index)
             except OperationFailure as e:
                 if 'codeName' in e.details and e.details['codeName'] == 'IndexAlreadyExists':
-                    print("\tIndex already exists")
+                    print("\t\tIndex already exists. Updating...")
+                    db.get_collection(c['name']).update_search_index(index.document.get('name'),index.document.get('definition'))
                     pass
                 else:
-                    print("\tError creating index:", e)
+                    print("\t\tError updating index:", e)
                     raise e
-connection.close()

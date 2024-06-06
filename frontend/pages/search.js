@@ -187,9 +187,6 @@ export default function SearchPage(context){
   }
 
   return (
-    // <>
-    // <Header/>
-    // <div style={{display:"inline-flex",flexDirection:"row",justifyContent:"end"}}>
       <div style={{width:"90vw"}}>
         <SearchBanner appName="News Demo"
           query={state.query.terms}
@@ -283,8 +280,5 @@ export default function SearchPage(context){
           :<></>  
         }
       </div>
-      //<Sidebar />
-    //</div>
-    //</>
   )
 }
