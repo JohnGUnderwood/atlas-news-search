@@ -29,12 +29,6 @@ RUN apt-get purge -y aptitude && apt-get autoremove -y && apt-get clean
 ENV CHROME_PATH="/usr/bin/chromium"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
 
-# Check if .env file exists and create it if it doesn't
-# RUN touch .env
-
-# RUN echo "\nCHROME_PATH=\"/usr/bin/chromium\"" >> .env && \
-#     echo "CHROMEDRIVER_PATH=\"/usr/bin/chromedriver\"" >> .env;
-
 # Create a virtual environment
 RUN python3 -m venv venv
 
