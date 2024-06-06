@@ -7,7 +7,7 @@ First you will need to set your database connection string and optional database
 ```
 MDBCONNSTR -- Connection string for your Atlas Cluster
 MDB_DB -- MongoDB database to install to (defaults to 'news-demo')
-NEXT_PUBLIC_API_URL -- environment variable specifying the endpoint where the backend API is running
+NEXT_PUBLIC_API_URL -- Specify base url for backend APIs, useful for kubernetes deployments. Defaults to 'http://127.0.0.1:3010'
 VECTOR_SERVICE_URL -- If you are using a self-hosted embedding service
 OPENAIDEPLOYMENT -- Model deployment if using Azure OpenAI
 OPENAIENDPOINT -- Endpoint if using Azure OpenAI deployment
