@@ -20,6 +20,7 @@ if [ $EXITCODE -eq 0 ]
     echo "\t${MDB_DB}\n"
     echo "\t${PROVIDER}\n"
     echo "\t${EMBEDDING_API_KEY}\n"
+    echo "\t${EMBEDDING_DIMENSIONS}\n"
     echo 
     echo "Starting container"
     echo
@@ -30,6 +31,7 @@ if [ $EXITCODE -eq 0 ]
     -e "MDB_DB=${MDB_DB}" \
     -e "PROVIDER=${PROVIDER}" \
     -e "EMBEDDING_API_KEY=${EMBEDDING_API_KEY}" \
+    -e "EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS}" \
     --restart unless-stopped    newssearch:latest
     echo
     echo "+================================"

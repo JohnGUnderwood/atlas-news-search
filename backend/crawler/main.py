@@ -9,11 +9,10 @@ import traceback
 from datetime import datetime,timezone
 from bson.objectid import ObjectId
 
-connection = MongoDBConnection()
-db = connection.get_database()
-
 def startProcess(config,feed_id):
     try:
+        connection = MongoDBConnection()
+        db = connection.get_database()
         print('Parent process:', os.getppid())
         print('Process id:', os.getpid())
         config.update({'_id':ObjectId(feed_id)})
@@ -30,6 +29,8 @@ def startProcess(config,feed_id):
         print("Finished. Crawl log: {}".format(feed_id))
     except Exception:
         print(traceback.format_exc())
+    finally:
+        connection.close()
 
 def killProcess(pid,crawlId):
     try: 
@@ -40,7 +41,7 @@ def killProcess(pid,crawlId):
         print(traceback.format_exc())
     
 
-def fetch_data(q):
+def fetch_data(q,db):
     data = list(db['queue'].find({"$or":[{'action':'stop'},{'action':'start'}]}))
     if(data):
         for item in data:
@@ -59,6 +60,8 @@ def process_data(item):
         print(traceback.format_exc())
 
 if __name__ == '__main__':
+    connection = MongoDBConnection()
+    db = connection.get_database()
     print("Starting queue processor.")
     num_cpus = os.cpu_count()
     print("Number of CPUs: ",num_cpus)
@@ -66,17 +69,15 @@ if __name__ == '__main__':
     # We can use 2x the number of CPUs to maximize the number of workers because the workers are I/O bound
     q = Queue()
 
-    fetch_process = Process(target=fetch_data, args=(q,))
+    # fetch_process = Process(target=fetch_data, args=(q,))
 
     with ProcessPoolExecutor(max_workers=num_cpus*2) as executor:
         while True:
+            fetch_data(q,db)
+
             if not q.empty():
                 item = q.get()
                 executor.submit(process_data, item)
-
-            if not fetch_process.is_alive():
-                fetch_process = Process(target=fetch_data, args=(q,))
-                fetch_process.start()
 
             sleep(1)
         

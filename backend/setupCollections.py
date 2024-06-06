@@ -1,4 +1,4 @@
-from packages import MongoDBConnection
+from packages import MongoDBConnection,Embeddings
 from pymongo.errors import CollectionInvalid,OperationFailure
 from pymongo.operations import SearchIndexModel
 from dotenv import load_dotenv
@@ -8,6 +8,7 @@ load_dotenv()
 
 connection=MongoDBConnection()
 db=connection.get_database()
+embedder =  Embeddings()
 
 feeds_search_index = SearchIndexModel(
     name="default",
@@ -234,40 +235,40 @@ docs_chunks_search_index = SearchIndexModel(
 )
 
 docs_chunks_vector_index = SearchIndexModel(
-    name="vectorIndex",
-    type="vectorSearch",
-    definition={
-        "fields":[
-            {
-                "type": "vector",
-                "path": "embedding",
-                "numDimensions": int(getenv("EMBEDDING_DIMENSIONS",1536)),
-                "similarity": "cosine"
-            },
-            {
-                "type":"filter",
-                "path":"published",
-            },
-            {
-                "type":"filter",
-                "path":"namespace",
-            },
-            {
-                "type":"filter",
-                "path":"type",
-            },
-            {
-                "type":"filter",
-                "path":"lang",
-            }
-            ,
-            {
-                "type":"filter",
-                "path":"nasdaq_tickers",
-            }
-        ]
-    }
-)
+        name="vectorIndex",
+        type="vectorSearch",
+        definition={
+            "fields":[
+                {
+                    "type": "vector",
+                    "path": "embedding",
+                    "numDimensions": embedder.get_dimensions(),
+                    "similarity": "cosine"
+                },
+                {
+                    "type":"filter",
+                    "path":"published",
+                },
+                {
+                    "type":"filter",
+                    "path":"namespace",
+                },
+                {
+                    "type":"filter",
+                    "path":"type",
+                },
+                {
+                    "type":"filter",
+                    "path":"lang",
+                }
+                ,
+                {
+                    "type":"filter",
+                    "path":"nasdaq_tickers",
+                }
+            ]
+        }
+    )
 
 collections = [
     {'name':"queue",'indexes':None},

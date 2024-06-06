@@ -5,6 +5,8 @@ from bson.objectid import ObjectId
 import json
 from packages import Entry,MyChromeDriver,MongoDBConnection,MyFeedParser,Embeddings
 import traceback
+from pymongo.errors import CollectionInvalid,OperationFailure
+from pymongo.operations import SearchIndexModel
 
 def returnPrettyJson(data):
     try:
@@ -44,7 +46,7 @@ def get_results(collection, pipeline):
         return results
     except Exception as error:
         raise error
-
+    
 app = Flask(__name__)
 cors = CORS(app)
 app.config['CORS_HEADERS'] = 'Content-Type'

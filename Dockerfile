@@ -17,7 +17,7 @@ ENV PYTHONPATH "${PYTHONPATH}:/usr/src/app/backend"
 RUN apt-get update && apt-get install -y \
 python3 \
 python3-pip \
-python3.11-venv \
+python3-venv \
 aptitude
 
 # Install chromium and chromedriver dependencies
@@ -26,16 +26,20 @@ RUN aptitude install -y chromium-driver chromium
 # Remove aptitude libraries to save space
 RUN apt-get purge -y aptitude && apt-get autoremove -y && apt-get clean
 
+ENV CHROME_PATH="/usr/bin/chromium"
+ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
+
 # Check if .env file exists and create it if it doesn't
-RUN touch .env
+# RUN touch .env
 
-RUN echo "\nCHROME_PATH=\"/usr/bin/chromium\"" >> .env && \
-    echo "CHROMEDRIVER_PATH=\"/usr/bin/chromedriver\"" >> .env;
+# RUN echo "\nCHROME_PATH=\"/usr/bin/chromium\"" >> .env && \
+#     echo "CHROMEDRIVER_PATH=\"/usr/bin/chromedriver\"" >> .env;
 
-# Set up a virtual environment and install Python dependencies.
-RUN python3 -m venv venv && \
-. venv/bin/activate && \
-pip3 install -q -r backend/requirements.txt
+# Create a virtual environment
+RUN python3 -m venv venv
+
+# Install Python dependencies in the virtual environment
+RUN venv/bin/pip3 install -q -r backend/requirements.txt
 
 # Install frontend dependencies
 WORKDIR /usr/src/app/frontend
@@ -58,4 +62,4 @@ EXPOSE 3000 3010
 USER appuser
 
 # Setup MongoDB Atlas collections and run supervisord on start.
-CMD ["/bin/bash", "-c", "source venv/bin/activate && python3 backend/setupCollections.py && python3 backend/installFeeds.py && supervisord"]
+CMD ["/bin/bash", "-c", "source venv/bin/activate python3 backend/setupCollections.py && python3 backend/installFeeds.py && supervisord"]

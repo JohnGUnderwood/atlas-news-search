@@ -386,10 +386,16 @@ class Embeddings():
             )
             self.model = getenv("OPENAIDEPLOYMENT")
             self.dimensions = getenv("EMBEDDING_DIMENSIONS",1536)
+            
+        self.dimensions = int(self.dimensions)
         print("Using provider: ",self.provider)
         print("Using model: ",self.model)
         print("Using dimensions: ",self.dimensions) 
     
+
+    def get_dimensions(self):
+        return self.dimensions
+
     def get_embedding_VectorService(embed_text):
         response = requests.get(getenv("VECTOR_SERVICE_URL"), params={"text":embed_text }, headers={"accept": "application/json"})
         vector_embedding = response.json()
