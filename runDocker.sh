@@ -20,5 +20,4 @@ docker run -t -i -d -p 3000:3000 -p 3010:3010 --name newssearch \
     -e "MDB_DB=${MDB_DB}" \
     -e "PROVIDER=${PROVIDER}" \
     -e "EMBEDDING_API_KEY=${EMBEDDING_API_KEY}" \
-    -e "NEXT_PUBLIC_API_URL=http://127.0.0.1:3010" \
     --restart unless-stopped johnunderwood197/newssearch:${tag}
