@@ -8,7 +8,7 @@ echo
 
 datehash=`date | md5sum | cut -d" " -f1`
 abbrvhash=${datehash: -8}
-docker build -t newssearch:latest .
+docker build -t newssearch:${abbrvhash} .
 
 EXITCODE=$?
 
@@ -32,7 +32,7 @@ if [ $EXITCODE -eq 0 ]
     -e "PROVIDER=${PROVIDER}" \
     -e "EMBEDDING_API_KEY=${EMBEDDING_API_KEY}" \
     -e "EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS}" \
-    --restart unless-stopped    newssearch:latest
+    --restart unless-stopped    newssearch:${abbrvhash}
     echo
     echo "+================================"
     echo "| END:  ATLAS NEWS SEARCH"
