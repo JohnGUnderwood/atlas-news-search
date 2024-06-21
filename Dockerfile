@@ -13,18 +13,20 @@ COPY ./ ./
 # Set the PYTHONPATH environment variable
 ENV PYTHONPATH "${PYTHONPATH}:/usr/src/app/backend"
 
-# Install Python and aptitude package manager which we need to install chromium
+# Update apt and ensure we have latest debian keys
+# RUN apt-get update && apt-get install -y gnupg
+# RUN apt-get install debian-archive-keyring && apt-key add /usr/share/keyrings/debian-archive-keyring.gpg
+
+# Install required packages
 RUN apt-get update && apt-get install -y \
 python3 \
 python3-pip \
 python3-venv \
-aptitude
+chromium-driver \
+chromium
 
-# Install chromium and chromedriver dependencies
-RUN aptitude install -y chromium-driver chromium
-
-# Remove aptitude libraries to save space
-RUN apt-get purge -y aptitude && apt-get autoremove -y && apt-get clean
+# Remove unneeded libraries to save space
+# RUN apt-get purge -y gnupg && apt-get autoremove -y && apt-get clean
 
 ENV CHROME_PATH="/usr/bin/chromium"
 ENV CHROMEDRIVER_PATH="/usr/bin/chromedriver"
@@ -49,11 +51,11 @@ RUN useradd -m appuser
 # Change the ownership of the copied files to 'appuser'.
 RUN chown -R appuser:appuser /usr/src/app
 
-# Expose port 3000 for the frontend and 3010 for the APIs.
-EXPOSE 3000 3010
+# Expose port 3000 for the frontend.
+EXPOSE 3000
 
 # Switch to 'appuser'.
 USER appuser
 
 # Setup MongoDB Atlas collections and run supervisord on start.
-CMD ["/bin/bash", "-c", "source venv/bin/activate python3 backend/setupCollections.py && python3 backend/installFeeds.py && supervisord"]
+ENTRYPOINT ["/bin/bash", "-c", "source venv/bin/activate python3 backend/setupCollections.py && python3 backend/installFeeds.py && supervisord"]

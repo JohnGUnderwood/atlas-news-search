@@ -28,6 +28,11 @@
     flex-grow: 1;
 }
 
+.formInputSelect {
+    margin-right: 23px;
+    flex-grow: 1.72;
+}
+
 .formRow .iconContainer {
     display: flex;
     gap: 10px;

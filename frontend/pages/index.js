@@ -21,7 +21,7 @@ export default function Home({token}){
         <UserProvider token={token}>
             <Header/>
             <div style={{display:"inline-flex",flexDirection:"row",justifyContent:"end"}}>
-            { nav == 'search' ? <SearchPage/> : <FeedsPage/> }
+            { nav == 'search' ? <SearchPage/> : nav == 'feeds' ? <FeedsPage/> : <></> }
             <Sidebar nav={nav} setNav={setNav} />
             </div>
         </UserProvider>  

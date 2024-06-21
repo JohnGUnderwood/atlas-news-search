@@ -26,12 +26,13 @@ if [ $EXITCODE -eq 0 ]
     echo
     docker stop newssearch
     docker rm newssearch
-    docker run -t -i -d -p 3000:3000 -p 3010:3010 --name newssearch \
+    docker run -t -i -d -p 3000:3000 --name newssearch \
     -e "MDBCONNSTR=${MDBCONNSTR}" \
     -e "MDB_DB=${MDB_DB}" \
     -e "PROVIDER=${PROVIDER}" \
     -e "EMBEDDING_API_KEY=${EMBEDDING_API_KEY}" \
     -e "EMBEDDING_DIMENSIONS=${EMBEDDING_DIMENSIONS}" \
+    -e "NEXT_PUBLIC_LOCALDEVJWTOVERRIDE=${NEXT_PUBLIC_LOCALDEVJWTOVERRIDE}" \
     --restart unless-stopped    newssearch:${abbrvhash}
     echo
     echo "+================================"

@@ -7,9 +7,8 @@ import { Spinner } from '@leafygreen-ui/loading-indicator';
 import SearchBanner from '../components/searchBanner/SearchBanner';
 import { useApi } from '../components/useApi';
 import ScalarSlider from '../components/scalarSlider';
-import Sidebar from '../components/sidebar/sidebar';
 
-export default function SearchPage(context){
+export default function SearchPage(){
   const [state, setState] = useState({
     query: {terms:'',method:'fts',filters:{},paginationToken: null,scalar:{fts:0.5,vector:0.5}},
     page: 1,

@@ -1,4 +1,4 @@
-from packages import MongoDBConnection,Embeddings
+from packages import MongoDBConnection,Embeddings,languages
 from pymongo.errors import CollectionInvalid,OperationFailure
 from pymongo.operations import SearchIndexModel
 from dotenv import load_dotenv
@@ -101,43 +101,11 @@ docs_search_index = SearchIndexModel(
                 ],
                 "summary": {
                     "type": "document",
-                    "fields": {
-                        "en": {
-                            "type": "string",
-                            "analyzer": "lucene.english",
-                            "searchAnalyzer": "lucene.english"
-                        },
-                        "es": {
-                            "type": "string",
-                            "analyzer": "lucene.spanish",
-                            "searchAnalyzer": "lucene.spanish"
-                        },
-                        "fr": {
-                            "type": "string",
-                            "analyzer": "lucene.french",
-                            "searchAnalyzer": "lucene.french"
-                        }
-                    }
+                    "fields": {}
                 },
                 "content": {
                     "type": "document",
-                    "fields": {
-                        "en": {
-                            "type": "string",
-                            "analyzer": "lucene.english",
-                            "searchAnalyzer": "lucene.english"
-                        },
-                        "es": {
-                            "type": "string",
-                            "analyzer": "lucene.spanish",
-                            "searchAnalyzer": "lucene.spanish"
-                        },
-                        "fr": {
-                            "type": "string",
-                            "analyzer": "lucene.french",
-                            "searchAnalyzer": "lucene.french"
-                        }
-                    }
+                    "fields": {}
                 },
                 "title": {
                     "type": "document",
@@ -146,27 +114,6 @@ docs_search_index = SearchIndexModel(
                             {
                                 "type": "autocomplete"
                             }
-                        ],
-                        "en": [
-                            {
-                                "type": "string",
-                                "analyzer": "lucene.english",
-                                "searchAnalyzer": "lucene.english"
-                            }
-                        ],
-                        "es": [
-                            {
-                                "type": "string",
-                                "analyzer": "lucene.spanish",
-                                "searchAnalyzer": "lucene.spanish"
-                            }
-                        ],
-                        "fr": [
-                            {
-                                "type": "string",
-                                "analyzer": "lucene.french",
-                                "searchAnalyzer": "lucene.french"
-                            }
                         ]
                     }
                 }
@@ -174,6 +121,15 @@ docs_search_index = SearchIndexModel(
         }
         }
 )
+
+# Dynamically add language definitions to the search index
+for field in 'summary','content','title':
+    for lang in languages:
+        docs_search_index.document['definition']['mappings']['fields'][field]['fields'][lang['code']] = {
+            "type": "string",
+            "analyzer": lang['lucene_analyzer'],
+            "searchAnalyzer": lang['lucene_analyzer']
+        }
 
 docs_chunks_search_index = SearchIndexModel(
     name="searchIndex",

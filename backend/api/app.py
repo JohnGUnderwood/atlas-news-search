@@ -3,10 +3,8 @@ from flask_cors import CORS, cross_origin
 from bson.json_util import dumps
 from bson.objectid import ObjectId
 import json
-from packages import Entry,MyChromeDriver,MongoDBConnection,MyFeedParser,Embeddings
+from packages import Entry,MyChromeDriver,MongoDBConnection,MyFeedParser,Embeddings,languages
 import traceback
-from pymongo.errors import CollectionInvalid,OperationFailure
-from pymongo.operations import SearchIndexModel
 
 def returnPrettyJson(data):
     try:
@@ -54,7 +52,10 @@ connection = MongoDBConnection()
 db = connection.get_database()
 driver = MyChromeDriver()
 embedder =  Embeddings()
-languages = ['en','es','fr']
+
+@app.get('/languages')
+def getLanguages():
+    return returnPrettyJson(languages),200
 
 @app.post('/test')
 def testConfig():
@@ -77,7 +78,7 @@ def postFeed():
     try:
         request.json['config']['namespace'] = request.headers.get('User','all')
         db['feeds'].insert_one(request.json)
-        feedList = list(db['feeds'].find({}))
+        feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User','')}]}))
         feedDict = {str(feed['_id']): feed for feed in feedList}
         return returnPrettyJson(feedDict), 200
     except Exception as e:

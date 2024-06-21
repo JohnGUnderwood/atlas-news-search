@@ -16,7 +16,7 @@ echo "Starting container"
 echo
 docker stop newssearch
 docker rm newssearch
-docker run -t -i -d -p 3000:3000 -p 3010:3010 --name newssearch \
+docker run -t -i -d -p 3000:3000 --name newssearch \
     -e "MDBCONNSTR=${MDBCONNSTR}" \
     -e "MDB_DB=${MDB_DB}" \
     -e "PROVIDER=${PROVIDER}" \

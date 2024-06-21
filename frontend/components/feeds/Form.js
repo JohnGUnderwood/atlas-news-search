@@ -2,15 +2,31 @@ import styles from "./form.module.css";
 import { Label } from "@leafygreen-ui/typography";
 import TextInput from '@leafygreen-ui/text-input';
 import Icon from "@leafygreen-ui/icon";
+import { Select, Option } from "@leafygreen-ui/select";
+import { useApi } from "../useApi";
+import { useState, useEffect } from "react";
 
 export default function Form({formData,setFormData}){
+    const api = useApi();
+    const [languages, setLanguages] = useState([]);
+    useEffect(() => {
+        api.get('languages')
+          .then(resp => setLanguages(resp.data))
+          .catch(e => console.log(e));
+      }, []); 
+
     const handleInputChange = (attribute, event, index=null) => {
-        
+        console.log(attribute, event);
         if(attribute === 'content_html_selectors'){
             setFormData({
                 ...formData, 
                 content_html_selectors: formData.content_html_selectors.map(
                     (value, i) => i === index ? event.target.value : value)
+            });
+        }else if (attribute === 'lang'){
+            setFormData({
+                ...formData,
+                [attribute]: event
             });
         }else {
             setFormData({
@@ -57,11 +73,22 @@ export default function Form({formData,setFormData}){
             </div>
             <div className={styles.formRow}>
                 <Label htmlFor="lang">Language:</Label>
-                <TextInput
+                {/* <TextInput
                     className={styles.formInput}
                     value={formData.lang}
                     type="text" id="lang" name="lang" required
-                    onChange={event => handleInputChange('lang',event)}/>
+                    onChange={event => handleInputChange('lang',event)}/> */}
+
+                <Select 
+                    name="Language"
+                    defaultValue="en"
+                    onChange={event => handleInputChange('lang',event)}
+                    className={styles.formInputSelect}
+                >   
+                    {languages.map((lang, index) => (
+                        <Option key={`lang_${index}`} value={lang.code}>{lang.name}</Option>
+                    ))}
+                </Select>
                 <div className={styles.spacer}></div>
             </div>
             <div className={styles.formRow}>

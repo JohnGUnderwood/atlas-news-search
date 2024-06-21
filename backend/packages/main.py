@@ -17,6 +17,24 @@ import atexit
 
 load_dotenv()
 
+languages = [
+    {
+        'code':'en',
+        'name':'English',
+        'lucene_analyzer':'lucene.english'
+    },
+    {
+        'code':'es',
+        'name':'Spanish',
+        'lucene_analyzer':'lucene.spanish'
+    },
+    {
+        'code':'fr',
+        'name':'French',
+        'lucene_analyzer':'lucene.french'
+    }
+]
+
 class Crawler:
     def __init__(self,FEED_CONFIG,PID,CONN):
         self.FEED_CONFIG=FEED_CONFIG
