@@ -11,6 +11,10 @@ export function useApi() {
     function post(url, data, params) {
       return api.post(url, data, {params});
     }
+
+    function put(url, data, params) {
+      return api.put(url, data, {params});
+    }
   
     function del(url, data, params) {
       return api.delete(url, data, {params});
@@ -23,5 +27,5 @@ export function useApi() {
       };
     }
     
-    return { get, post, del, setHeaders };
+    return { get, put, post, del, setHeaders };
 }

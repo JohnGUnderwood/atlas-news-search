@@ -1,7 +1,7 @@
 import Feeds from "../components/feeds/Feeds";
 import Head from "next/head";
 import { H1,H2, H3, Subtitle, Description, Label } from '@leafygreen-ui/typography';
-import Submit from "../components/feeds/Submit";
+import AddFeed from "../components/feeds/AddFeed";
 import Modal from "@leafygreen-ui/modal";
 import { useState, useEffect } from 'react';
 import SearchBanner from "../components/searchBanner/SearchBanner";
@@ -49,7 +49,7 @@ export default function FeedsPage(){
       <SearchBanner appName="News Demo" query={query} handleQueryChange={handleQueryChange} handleSearch={handleSearch}/>
       <Modal open={open} setOpen={setOpen}>
         <Subtitle>Add Feed</Subtitle>
-        <Submit setFeeds={setFeeds} setOpen={setOpen}/>
+        <AddFeed setFeeds={setFeeds} setOpen={setOpen}/>
       </Modal>
       <div style={{paddingTop:"50px"}}>
         <Button style={{marginLeft:"30px"}} onClick={()=>setOpen(true)}>Add Feed</Button>

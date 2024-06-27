@@ -11,6 +11,7 @@ import styles from "./feed.module.css";
 import { useRouter } from 'next/router';
 import { useApi } from "../useApi";
 import { UserContext } from '../auth/UserContext';
+import EditFeed from './EditFeed';
 
 export default function Feed({f,feeds,setFeeds}){
     const [testResult, setTestResult] = useState(null);
@@ -21,6 +22,7 @@ export default function Feed({f,feeds,setFeeds}){
     const router = useRouter();
     const [showDetails, setShowDetails] = useState(false);
     const [deleteModal, setDeleteModal] = useState(false);
+    const [editModal, setEditModal] = useState(false);
     const api = useApi();
     const toggleDetails = () => {
         setShowDetails(!showDetails);
@@ -122,6 +124,11 @@ export default function Feed({f,feeds,setFeeds}){
                 </div>
                 <div className={styles.buttonsContainer}>
                     <Button onClick={() => test(feed._id.$oid)}>Test</Button>
+                    {user == feed.config.namespace ? <Button onClick={() => setEditModal(true)}>Edit</Button> : <></>}
+                    <Modal open={editModal} setOpen={setEditModal}>
+                        <Subtitle>Edit Feed</Subtitle>
+                        <EditFeed setFeeds={setFeeds} setOpen={setEditModal} feed={feed} setFeed={setFeed}/>
+                    </Modal>
                     {user == feed.config.namespace || groups.includes('10gen-saspecialist') ? <Button variant="danger" onClick={() => setDeleteModal(true)}>Delete</Button> : <></>}
                     <Modal open={deleteModal} setOpen={setDeleteModal}>
                         <Subtitle>Are you sure you want to delete this feed?</Subtitle>

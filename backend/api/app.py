@@ -5,6 +5,7 @@ from bson.objectid import ObjectId
 import json
 from packages import Entry,MyChromeDriver,MongoDBConnection,MyFeedParser,Embeddings,languages
 import traceback
+from pymongo import ReturnDocument
 
 def returnPrettyJson(data):
     try:
@@ -21,20 +22,23 @@ def returnPrettyJson(data):
 def test(config):
     try:
         feed = MyFeedParser(config['url']).parseFeed()
-        try:
-            entry = Entry(
-                DATA=feed.entries[0],
-                SELECTORS=config['content_html_selectors'],
-                LANG=config['lang'],
-                ATTRIBUTION=config['attribution'],
-                DRIVER=driver,
-                DATE_FORMAT=config['date_format'],
-                NAMESPACE=request.headers.get('User','all'),
-                CUSTOM_FIELDS=config.get('custom_fields',None)
-            ).processEntry()
-        except Exception as e:
-            return {"error":str(traceback.format_exc())},200
-        return returnPrettyJson(entry),200
+        if 'entries' not in feed or len(feed.entries) == 0:
+            return returnPrettyJson({'error':"No entries found in feed",'feed':feed}),200
+        else:                            
+            try:
+                entry = Entry(
+                    DATA=feed.entries[0],
+                    SELECTORS=config['content_html_selectors'],
+                    LANG=config['lang'],
+                    ATTRIBUTION=config['attribution'],
+                    DRIVER=driver,
+                    DATE_FORMAT=config['date_format'],
+                    NAMESPACE=request.headers.get('User','all'),
+                    CUSTOM_FIELDS=config.get('custom_fields',None)
+                ).processEntry()
+            except Exception as e:
+                return {"error":str(traceback.format_exc())},200
+            return returnPrettyJson(entry),200
     except Exception as e:
         return returnPrettyJson(e),200
 
@@ -57,7 +61,7 @@ embedder =  Embeddings()
 def getLanguages():
     return returnPrettyJson(languages),200
 
-@app.post('/test')
+@app.put('/test')
 def testConfig():
     try:
         return test(request.json)
@@ -74,13 +78,24 @@ def getFeeds():
         return returnPrettyJson(e),500
 
 @app.post("/feeds")
-def postFeed():
+def createFeed():
     try:
         request.json['config']['namespace'] = request.headers.get('User','all')
-        db['feeds'].insert_one(request.json)
-        feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User','')}]}))
-        feedDict = {str(feed['_id']): feed for feed in feedList}
-        return returnPrettyJson(feedDict), 200
+        result = db['feeds'].insert_one(request.json)
+        response = request.json
+        response['_id'] = result.inserted_id
+        return returnPrettyJson(response), 200
+    except Exception as e:
+        return returnPrettyJson(e),500
+
+@app.put("/feeds/<string:feedId>")
+def updateFeed(feedId):
+    try:
+        request.json['config']['namespace'] = request.headers.get('User','all')
+        result = db['feeds'].find_one_and_update({'_id':ObjectId(feedId)},{"$set":request.json},upsert=True,return_document=ReturnDocument.AFTER)
+        # feedList = list(db['feeds'].find({"$or":[{"config.namespace":"all"},{"config.namespace":request.headers.get('User','')}]}))
+        # feedDict = {str(feed['_id']): feed for feed in feedList}
+        return returnPrettyJson(result), 200
     except Exception as e:
         return returnPrettyJson(e),500
     

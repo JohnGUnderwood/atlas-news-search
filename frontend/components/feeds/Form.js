@@ -16,7 +16,6 @@ export default function Form({formData,setFormData}){
       }, []); 
 
     const handleInputChange = (attribute, event, index=null) => {
-        console.log(attribute, event);
         if(attribute === 'content_html_selectors'){
             setFormData({
                 ...formData, 
@@ -73,12 +72,6 @@ export default function Form({formData,setFormData}){
             </div>
             <div className={styles.formRow}>
                 <Label htmlFor="lang">Language:</Label>
-                {/* <TextInput
-                    className={styles.formInput}
-                    value={formData.lang}
-                    type="text" id="lang" name="lang" required
-                    onChange={event => handleInputChange('lang',event)}/> */}
-
                 <Select 
                     name="Language"
                     defaultValue="en"
